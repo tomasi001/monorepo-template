@@ -1,0 +1,35 @@
+{
+  "name": "direct-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "packages/*",
+      "apps/*"
+    ]
+  },
+  "packageManager": "yarn@1.22.19",
+  "main": "index.js",
+  "author": "tomasi-metaversal <thomas@metaversal.gg>",
+  "license": "MIT",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean && rimraf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "generate": "turbo run generate",
+    "db:migrate:dev": "turbo run db:migrate:dev",
+    "db:generate": "turbo run db:generate",
+    "db:studio": "cd packages/database && yarn db:studio"
+  },
+  "devDependencies": {
+    "eslint": "^9.25.1",
+    "prettier": "^3.5.3",
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.3",
+    "@packages/tsconfig": "*",
+    "@packages/eslint-config-custom": "*",
+    "rimraf": "^3.0.2"
+  }
+}

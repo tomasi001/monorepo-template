@@ -1,0 +1,6 @@
+# apps/frontend/src/graphql/healthCheck.graphql
+query HealthCheck {
+  healthCheck {
+    status
+  }
+}

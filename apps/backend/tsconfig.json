@@ -1,0 +1,10 @@
+{
+  "extends": "@packages/tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "module": "CommonJS", // Node typically uses CommonJS
+    "resolveJsonModule": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

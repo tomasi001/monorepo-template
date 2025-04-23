@@ -1,0 +1,27 @@
+{
+  "name": "@packages/database",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs --dts",
+    "dev": "tsup src/index.ts --format cjs --dts --watch",
+    "clean": "rimraf dist .turbo node_modules",
+    "db:generate": "prisma generate",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "5"
+  },
+  "devDependencies": {
+    "@packages/tsconfig": "*",
+    "prisma": "5",
+    "rimraf": "^3.0.2",
+    "tsup": "^6.0.0",
+    "typescript": "^5.0.0"
+  }
+}

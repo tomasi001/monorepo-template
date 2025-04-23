@@ -1,0 +1,30 @@
+{
+  "name": "@packages/ui",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.tsx --format esm --dts --external react",
+    "dev": "tsup src/index.tsx --format esm --dts --external react --watch",
+    "lint": "eslint . --ext .ts,.tsx",
+    "clean": "rimraf dist .turbo node_modules"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "react": "^18.2.0",
+    "@types/react": "^18.0.0",
+    "typescript": "^5.0.0",
+    "@packages/tsconfig": "*",
+    "@packages/eslint-config-custom": "*",
+    "tsup": "^6.0.0",
+    "rimraf": "^3.0.2",
+    "eslint": "^8.57.0"
+  }
+}

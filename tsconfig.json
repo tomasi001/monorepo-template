@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "strict": true // Enforce stricter settings globally if desired
+  },
+  "include": [], // No files included at the root
+  "references": [
+    { "path": "packages/tsconfig" },
+    { "path": "packages/database" },
+    { "path": "packages/ui" },
+    { "path": "apps/backend" },
+    { "path": "apps/frontend" }
+  ],
+  "exclude": ["node_modules", "dist", "build"]
+}

@@ -1,5 +1,8 @@
 # Project Scaffolding Checklist (Monorepo: TS, React/Vite, Express/GraphQL, Prisma)
+
 EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE ON THE RIGHT PATH. THE ONLY EDIT YOU CAN MAKE IN THIS FILE IS WHEN YOU HAVE COMPLETED A TASK YOU MAY CHECK THE BOX. NOTHING ELSE. YOU MAY NOT MODIFY THE WORDING IN THIS CHECKLIST
+
+run nvm use before installing any packages
 
 **Goal:** Create a monorepo setup, using Vite for the frontend and focusing on local development with Dockerized Postgres, Prisma, GraphQL, and end-to-end type safety. Uses TanStack Query on the frontend. Always use latest version of everything, the package jsons are just for reference
 
@@ -9,8 +12,8 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
 
 ## I. Root Project Initialization
 
-- [ ] 1. Initialize Git: `git init`.
-- [ ] 2. Create a `.gitignore` file. Add standard Node, macOS, VSCode, and environment files:
+- [x] 1. Initialize Git: `git init`.
+- [x] 2. Create a `.gitignore` file. Add standard Node, macOS, VSCode, and environment files:
 
   ```gitignore
   # Dependencies
@@ -38,8 +41,8 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
   apps/frontend/.vite/
   ```
 
-- [ ] 3. Initialize Yarn: `yarn init -y`.
-- [ ] 4. Configure Yarn Workspaces in `package.json`:
+- [x] 3. Initialize Yarn: `yarn init -y`.
+- [x] 4. Configure Yarn Workspaces in `package.json`:
   ```json
   {
     "name": "direct-monorepo",
@@ -56,12 +59,12 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     }
   }
   ```
-- [ ] 5. Install root development dependencies:
+- [x] 5. Install root development dependencies:
      `yarn add -W -D turbo typescript prettier eslint @packages/tsconfig @packages/eslint-config-custom`
      _(Note: `@packages/_`will be created soon, you might need to add them later or use`--ignore-scripts` for now)\*
-- [ ] 6. Create `apps` directory: `mkdir apps`.
-- [ ] 7. Create `packages` directory: `mkdir packages`.
-- [ ] 8. Create root `tsconfig.json` (references workspaces):
+- [x] 6. Create `apps` directory: `mkdir apps`.
+- [x] 7. Create `packages` directory: `mkdir packages`.
+- [x] 8. Create root `tsconfig.json` (references workspaces):
   ```json
   // ./tsconfig.json
   {
@@ -79,7 +82,7 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     "exclude": ["node_modules", "dist", "build"]
   }
   ```
-- [ ] 9. Create Prettier configuration (`.prettierrc.json`):
+- [x] 9. Create Prettier configuration (`.prettierrc.json`):
   ```json
   {
     "semi": true,
@@ -89,7 +92,7 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     "tabWidth": 2
   }
   ```
-- [ ] 10. Create Turborepo configuration (`turbo.json`):
+- [x] 10. Create Turborepo configuration (`turbo.json`):
   ```json
   // ./turbo.json
   {
@@ -127,7 +130,7 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
 
 ## II. Docker & Database Setup (PostgreSQL)
 
-- [ ] 1. Create `docker-compose.yml` in the root:
+- [x] 1. Create `docker-compose.yml` in the root:
 
   ```yaml
   version: "3.9"
@@ -149,14 +152,14 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     postgres_data:
   ```
 
-- [ ] 2. Create a root `.env` file for the database URL:
+- [x] 2. Create a root `.env` file for the database URL:
   ```env
   # ./ .env
   DATABASE_URL="postgresql://myuser:mypassword@localhost:5432/myappdb"
   ```
-- [ ] 3. Ensure `.env` is in `.gitignore` (added in Step I.4).
-- [ ] 4. Start the database container: `docker-compose up -d`.
-- [ ] 5. Verify the database container is running: `docker ps`.
+- [x] 3. Ensure `.env` is in `.gitignore` (added in Step I.4).
+- [x] 4. Start the database container: `docker-compose up -d`.
+- [x] 5. Verify the database container is running: `docker ps`.
 
 ---
 
@@ -164,8 +167,8 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
 
 ### A. `packages/tsconfig`
 
-- [ ] 1. Create directory: `mkdir packages/tsconfig`.
-- [ ] 2. Create `packages/tsconfig/package.json`:
+- [x] 1. Create directory: `mkdir packages/tsconfig`.
+- [x] 2. Create `packages/tsconfig/package.json`:
   ```json
   {
     "name": "@packages/tsconfig",
@@ -175,7 +178,7 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     "files": ["base.json"]
   }
   ```
-- [ ] 3. Create `packages/tsconfig/base.json` (strict base config):
+- [x] 3. Create `packages/tsconfig/base.json` (strict base config):
   ```json
   {
     "$schema": "https://json.schemastore.org/tsconfig",
@@ -203,8 +206,8 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
 
 ### B. `packages/eslint-config-custom`
 
-- [ ] 1. Create directory: `mkdir packages/eslint-config-custom`.
-- [ ] 2. Create `packages/eslint-config-custom/package.json`:
+- [x] 1. Create directory: `mkdir packages/eslint-config-custom`.
+- [x] 2. Create `packages/eslint-config-custom/package.json`:
   ```json
   {
     "name": "@packages/eslint-config-custom",
@@ -230,8 +233,8 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     }
   }
   ```
-- [ ] 3. Install dependencies within the package: `yarn workspace @packages/eslint-config-custom add @typescript-eslint/eslint-plugin@^6.0.0 @typescript-eslint/parser@^6.0.0 eslint-config-prettier@^9.0.0 eslint-config-turbo eslint-plugin-react` and `yarn workspace @packages/eslint-config-custom add -D eslint@^8.57.0`
-- [ ] 4. Create `packages/eslint-config-custom/index.js`:
+- [x] 3. Install dependencies within the package: `yarn workspace @packages/eslint-config-custom add @typescript-eslint/eslint-plugin@^6.0.0 @typescript-eslint/parser@^6.0.0 eslint-config-prettier@^9.0.0 eslint-config-turbo eslint-plugin-react` and `yarn workspace @packages/eslint-config-custom add -D eslint@^8.57.0`
+- [x] 4. Create `packages/eslint-config-custom/index.js`:
   ```javascript
   module.exports = {
     env: {
@@ -263,10 +266,12 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
 
 ### C. `packages/database`
 
-- [ ] 1. Create directory: `mkdir packages/database`.
-- [ ] 2. Navigate into the package: `cd packages/database`.
-- [ ] 3. Initialize `package.json`: `yarn init -y`.
-- [ ] 4. Edit `packages/database/package.json`:
+_(Note: Ensure environment variables from the root `.env` file are loaded before running database commands in this package, e.g., by sourcing the file: `set -o allexport; source ../../.env; set +o allexport`)_
+
+- [x] 1. Create directory: `mkdir packages/database`.
+- [x] 2. Navigate into the package: `cd packages/database`.
+- [x] 3. Initialize `package.json`: `yarn init -y`.
+- [x] 4. Edit `packages/database/package.json`:
   ```json
   {
     "name": "@packages/database",
@@ -295,8 +300,8 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     }
   }
   ```
-- [ ] 5. Install dependencies: `yarn add @prisma/client@5` and `yarn add -D prisma@5 typescript @packages/tsconfig tsup rimraf`.
-- [ ] 6. Create `packages/database/tsconfig.json`:
+- [x] 5. Install dependencies: `yarn add @prisma/client@5` and `yarn add -D prisma@5 typescript @packages/tsconfig tsup rimraf`.
+- [x] 6. Create `packages/database/tsconfig.json`:
   ```json
   {
     "extends": "@packages/tsconfig/base.json",
@@ -307,8 +312,8 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     "exclude": ["node_modules", "dist"]
   }
   ```
-- [ ] 7. Initialize Prisma: `npx prisma init --datasource-provider postgresql`.
-- [ ] 8. Verify `packages/database/prisma/schema.prisma` uses the environment variable:
+- [x] 7. Initialize Prisma: `npx prisma init --datasource-provider postgresql`.
+- [x] 8. Verify `packages/database/prisma/schema.prisma` uses the environment variable:
 
   ```prisma
   datasource db {
@@ -323,7 +328,7 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
   // Add models later
   ```
 
-- [ ] 9. Create a simple initial model in `schema.prisma`:
+- [x] 9. Create a simple initial model in `schema.prisma`:
   ```prisma
   model HealthCheck {
     id        String   @id @default(cuid())
@@ -331,8 +336,8 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     checkedAt DateTime @default(now())
   }
   ```
-- [ ] 10. Run initial database migration: `yarn db:migrate:dev --name initial-setup`. (Confirm creation when prompted).
-- [ ] 11. Create `packages/database/src/index.ts` to export the client:
+- [x] 10. Run initial database migration: `yarn db:migrate:dev --name initial-setup`. (Confirm creation when prompted).
+- [x] 11. Create `packages/database/src/index.ts` to export the client:
 
   ```typescript
   import { PrismaClient } from "@prisma/client";
@@ -344,16 +349,16 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
   export default prisma;
   ```
 
-- [ ] 12. Run Prisma generate: `yarn db:generate`.
-- [ ] 13. Build the package: `yarn build`.
-- [ ] 14. Go back to the root directory: `cd ../..`.
+- [x] 12. Run Prisma generate: `yarn db:generate`.
+- [x] 13. Build the package: `yarn build`.
+- [x] 14. Go back to the root directory: `cd ../..`.
 
 ### D. `packages/ui`
 
-- [ ] 1. Create directory: `mkdir packages/ui`.
-- [ ] 2. Navigate into the package: `cd packages/ui`.
-- [ ] 3. Initialize `package.json`: `yarn init -y`.
-- [ ] 4. Edit `packages/ui/package.json`:
+- [x] 1. Create directory: `mkdir packages/ui`.
+- [x] 2. Navigate into the package: `cd packages/ui`.
+- [x] 3. Initialize `package.json`: `yarn init -y`.
+- [x] 4. Edit `packages/ui/package.json`:
   ```json
   {
     "name": "@packages/ui",
@@ -384,8 +389,8 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     }
   }
   ```
-- [ ] 5. Install dependencies: `yarn add -D react@^18.2.0 @types/react@^18.0.0 typescript @packages/tsconfig @packages/eslint-config-custom tsup rimraf eslint`.
-- [ ] 6. Create `packages/ui/tsconfig.json`:
+- [x] 5. Install dependencies: `yarn add -D react@^18.2.0 @types/react@^18.0.0 typescript @packages/tsconfig @packages/eslint-config-custom tsup rimraf eslint`.
+- [x] 6. Create `packages/ui/tsconfig.json`:
   ```json
   {
     "extends": "@packages/tsconfig/base.json",
@@ -398,7 +403,7 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     "exclude": ["node_modules", "dist"]
   }
   ```
-- [ ] 7. Create `packages/ui/.eslintrc.js`:
+- [x] 7. Create `packages/ui/.eslintrc.js`:
   ```javascript
   module.exports = {
     root: true,
@@ -406,12 +411,12 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     // Add React specific rules if needed in the base config or here
   };
   ```
-- [ ] 8. Create `packages/ui/src/index.tsx` (exporting types/components):
+- [x] 8. Create `packages/ui/src/index.tsx` (exporting types/components):
   ```typescript
   import * as React from "react";
   export * from "./Button"; // Example component
   ```
-- [ ] 9. Create `packages/ui/src/Button.tsx` (example component):
+- [x] 9. Create `packages/ui/src/Button.tsx` (example component):
 
   ```typescript
   import * as React from "react";
@@ -434,17 +439,17 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
   };
   ```
 
-- [ ] 10. Build the package: `yarn build`.
-- [ ] 11. Go back to the root directory: `cd ../..`.
+- [x] 10. Build the package: `yarn build`.
+- [x] 11. Go back to the root directory: `cd ../..`.
 
 ---
 
 ## IV. Backend Application Setup (`apps/backend`)
 
-- [ ] 1. Create directory: `mkdir apps/backend`.
-- [ ] 2. Navigate into the app: `cd apps/backend`.
-- [ ] 3. Initialize `package.json`: `yarn init -y`.
-- [ ] 4. Edit `apps/backend/package.json`:
+- [x] 1. Create directory: `mkdir apps/backend`.
+- [x] 2. Navigate into the app: `cd apps/backend`.
+- [x] 3. Initialize `package.json`: `yarn init -y`.
+- [x] 4. Edit `apps/backend/package.json`:
   ```json
   {
     "name": "@apps/backend",
@@ -484,451 +489,589 @@ EACH TIME YOU COMPLETE A TASK CHECK BACKIN WITH THIS CHECKLIST TO ENSURE YOU ARE
     }
   }
   ```
-- [ ] 5. Install dependencies: `yarn add @apollo/server@^4.9.0 express graphql cors @packages/database dotenv` and `yarn add -D typescript @types/node @types/express @types/cors @packages/tsconfig @packages/eslint-config-custom nodemon ts-node rimraf @graphql-codegen/cli @graphql-codegen/typescript @graphql-codegen/typescript-resolvers eslint`.
-- [ ] 6. Create `apps/backend/tsconfig.json`:
+- [x] 5. Install dependencies: `yarn add @apollo/server@^4.9.0 express graphql cors @packages/database dotenv` and `yarn add -D typescript @types/node @types/express @types/cors @packages/tsconfig @packages/eslint-config-custom nodemon ts-node rimraf @graphql-codegen/cli @graphql-codegen/typescript @graphql-codegen/typescript-resolvers eslint`.
+- [x] 6. Create `apps/backend/tsconfig.json`:
   ```json
   {
     "extends": "@packages/tsconfig/base.json",
     "compilerOptions": {
-      "outDir": "dist",
-      "module": "CommonJS", // Node typically uses CommonJS
-      "resolveJsonModule": true
+      "outDir": "dist"
     },
     "include": ["src"],
     "exclude": ["node_modules", "dist"]
   }
   ```
-- [ ] 7. Create `apps/backend/.eslintrc.js`:
+- [x] 7. Create `apps/backend/.eslintrc.js`:
   ```javascript
   module.exports = {
     root: true,
     extends: ["@packages/eslint-config-custom"],
+    // Add React specific rules if needed in the base config or here
   };
   ```
-- [ ] 8. Create `apps/backend/src/index.ts`:
+- [x] 8. Create `apps/backend/src/index.ts`:
 
   ```typescript
   import "dotenv/config"; // Load .env file
-  import express from "express";
-  import http from "http";
-  import cors from "cors";
   import { ApolloServer } from "@apollo/server";
-  import { expressMiddleware } from "@apollo/server/express4";
-  import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-  import prisma from "@packages/database"; // Import Prisma client
-  import { typeDefs } from "./schema";
-  import { resolvers } from "./resolvers";
-  import { Context } from "./context"; // Define Context type later
+  import { startStandaloneServer } from "@apollo/server/standalone";
+  import express from "express";
+  import cors from "cors";
+  import http from "http"; // Import http
+  import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer"; // Import drain plugin
+
+  import typeDefs from "./schema"; // Load schema
+  import resolvers from "./resolvers"; // Load resolvers
+  import prisma from "@packages/database"; // Import prisma client
 
   async function startServer() {
     const app = express();
+    // Our httpServer handles incoming requests to our Express app.
+    // Below, we tell Apollo Server to "drain" this httpServer,
+    // enabling our servers to shut down gracefully.
     const httpServer = http.createServer(app);
 
-    const server = new ApolloServer<Context>({
+    const server = new ApolloServer({
       typeDefs,
       resolvers,
-      plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+      plugins: [ApolloServerPluginDrainHttpServer({ httpServer })], // Add drain plugin
     });
 
+    // Ensure we wait for our server to start
     await server.start();
 
-    app.use(cors<cors.CorsRequest>()); // Configure CORS properly for prod
-    app.use(express.json());
+    // Apply middleware *before* applying the Apollo Server middleware
+    app.use(cors()); // Enable CORS for all origins (adjust for production)
+    app.use(express.json()); // Body parser
 
-    // GraphQL endpoint
-    app.use(
-      "/graphql",
-      expressMiddleware(server, {
-        context: async ({ req }) => ({
-          // Example context: inject Prisma client
-          prisma,
-          // Add auth details from req headers if needed
-        }),
-      })
-    );
-
-    // Simple REST health check endpoint
-    app.get("/health", async (req, res) => {
-      try {
-        // Optional: Check DB connection
-        await prisma.$queryRaw`SELECT 1`;
-        res.status(200).send("OK");
-      } catch (error) {
-        res.status(500).send("Error");
-      }
+    // Set up Apollo Server middleware (adjust path as needed)
+    // Note: We are using startStandaloneServer for simplicity here,
+    // but for more complex Express integrations, you might use
+    // expressMiddleware from '@apollo/server/express4'
+    const { url } = await startStandaloneServer(server, {
+      context: async ({ req }) => ({
+        // Example: Add context here if needed, e.g., auth
+        prisma, // Pass prisma client to resolvers
+        token: req.headers.token,
+      }),
+      listen: { port: 4000 }, // Specify the port
     });
 
-    const port = process.env.PORT || 4000;
-    await new Promise<void>((resolve) => httpServer.listen({ port }, resolve));
-    console.log(`🚀 Server ready at http://localhost:${port}/graphql`);
+    console.log(`🚀 Server ready at ${url}`);
   }
 
   startServer().catch((error) => {
-    console.error("Failed to start server:", error);
-    prisma.$disconnect(); // Disconnect Prisma on error
+    console.error("Failed to start the server:", error);
     process.exit(1);
   });
   ```
 
-- [ ] 9. Create `apps/backend/src/schema.ts` (or `.graphql` file):
+- [x] 9. Create `apps/backend/src/schema.ts` (define basic GraphQL schema):
 
   ```typescript
-  import gql from "graphql-tag"; // Or import { gql } from 'graphql-tag'; depending on setup
+  // apps/backend/src/schema.ts
+  import { gql } from "graphql-tag"; // Use graphql-tag for schema definition
 
-  export const typeDefs = gql`
+  // Note: Using gql tag is common for schema definition
+  const typeDefs = gql`
+    # The Query type lists all available queries clients can execute
     type Query {
-      health: String!
+      # Simple health check query
+      healthCheck: HealthCheckStatus!
     }
 
-    # Add other types later
+    # Simple type for the health check status
+    type HealthCheckStatus {
+      status: String!
+    }
+
+    # Add Mutations, other Types, Inputs, etc. here later
   `;
+
+  export default typeDefs;
   ```
 
-- [ ] 10. Create `apps/backend/src/resolvers.ts`:
+- [x] 10. Create `apps/backend/src/resolvers.ts` (implement basic resolvers):
 
   ```typescript
-  import { Resolvers } from "./generated/graphql"; // Import generated types
+  // apps/backend/src/resolvers.ts
+  import type { Resolvers } from "./generated/graphql-types"; // Import generated types
+  import prisma from "@packages/database"; // Import prisma client
 
-  export const resolvers: Resolvers = {
+  // Provide resolver functions for your schema fields
+  const resolvers: Resolvers = {
     Query: {
-      health: async (_parent, _args, context) => {
-        // Example: Use Prisma client from context
+      healthCheck: async (_parent, _args, context) => {
+        // Example: Perform a quick DB check
         try {
-          await context.prisma.healthCheck.create({ data: { status: "OK" } });
-          return "OK";
-        } catch (e) {
-          console.error("DB check failed:", e);
-          return "Error checking DB";
+          await context.prisma.healthCheck.create({
+            data: { status: "OK" },
+          });
+          return { status: "OK" };
+        } catch (error) {
+          console.error("Health check DB write failed:", error);
+          return { status: "Error connecting to DB" };
         }
       },
     },
-    // Add other resolvers later
+    // Add Mutation resolvers here
+    // Mutation: {
+    //   ...
+    // }
   };
+
+  export default resolvers;
   ```
 
-- [ ] 11. Create `apps/backend/src/context.ts`:
+- [x] 11. Create `apps/backend/codegen.ts` (GraphQL Code Generator config):
 
   ```typescript
-  import { PrismaClient } from "@packages/database";
-
-  // Define the shape of the context object passed to resolvers
-  export interface Context {
-    prisma: PrismaClient;
-    // Add other context properties like authenticated user ID later
-    // userId?: string;
-  }
-  ```
-
-- [ ] 12. Create GraphQL Codegen configuration (`apps/backend/codegen.ts`):
-
-  ```typescript
+  // apps/backend/codegen.ts
   import type { CodegenConfig } from "@graphql-codegen/cli";
 
   const config: CodegenConfig = {
-    schema: "./src/schema.ts", // Or path to .graphql file
+    overwrite: true,
+    schema: "./src/schema.ts", // Point to your schema file
     generates: {
-      "./src/generated/graphql.ts": {
+      "src/generated/graphql-types.ts": {
         plugins: ["typescript", "typescript-resolvers"],
         config: {
-          contextType: "../context#Context", // Path to context type
-          useIndexSignature: true, // Recommended for resolver types
+          // Optional: Use Prisma types for models if needed
+          // mapperTypeSuffix: 'Model',
+          // mappers: {
+          //   HealthCheck: '@prisma/client#HealthCheck as HealthCheckModel',
+          // },
+          contextType: "./index#ContextValue", // Point to your context type if needed
+          useIndexSignature: true,
+          // If you have Prisma integration, configure it here
+          // Make sure enums are mapped correctly if used
+          // enumValues: './prisma/generated/enums',
         },
       },
     },
+    require: ["ts-node/register"], // Needed to read .ts schema file
   };
+
   export default config;
   ```
 
-- [ ] 13. Generate GraphQL types: `yarn generate`.
-- [ ] 14. Ensure imports in `resolvers.ts` match the generated file.
-- [ ] 15. Build the backend: `yarn build`.
-- [ ] 16. Go back to the root directory: `cd ../..`.
+- [x] 12. Run GraphQL Code Generator: `yarn generate`.
+      _This creates `apps/backend/src/generated/graphql-types.ts`._
+
+- [x] 13. **Important:** Define the `ContextValue` type expected by Apollo Server and Codegen in `apps/backend/src/index.ts`. Update the `startStandaloneServer` call's `context` function and export the type:
+
+  ```typescript
+  // Add this interface/type definition near the top of apps/backend/src/index.ts
+  import type { PrismaClient } from "@packages/database";
+
+  export interface ContextValue {
+    prisma: PrismaClient;
+    token?: string;
+  }
+
+  // ... inside startServer function, update context definition:
+  const { url } = await startStandaloneServer<ContextValue>(server, {
+    // Specify ContextValue type here
+    context: async ({ req }) => ({
+      prisma, // Pass prisma client to resolvers
+      token: req.headers.token,
+    }),
+    listen: { port: 4000 },
+  });
+  ```
+
+- [x] 14. Build the backend application: `yarn build`.
+
+- [x] 15. Go back to the root directory: `cd ../..`.
 
 ---
 
-## V. Frontend Application Setup (`apps/frontend` - Vite)
+## V. Frontend Application Setup (`apps/frontend`)
 
-- [ ] 1. Create Vite project: `yarn create vite apps/frontend --template react-ts`.
-- [ ] 2. Navigate into the app: `cd apps/frontend`.
-- [ ] 3. Install initial dependencies: `yarn`.
-- [ ] 4. Update `apps/frontend/package.json`: Change `"name"` to `"@apps/frontend"`, ensure `"private": true`.
-- [ ] 5. Install required dependencies:
-     `yarn add @chakra-ui/react @emotion/react @emotion/styled framer-motion react-router-dom @tanstack/react-query graphql graphql-request @packages/ui`
-- [ ] 6. Install required dev dependencies:
-     `yarn add -D @packages/tsconfig @packages/eslint-config-custom eslint @graphql-codegen/cli @graphql-codegen/typescript @graphql-codegen/typescript-operations @graphql-codegen/typescript-react-query` (or use `graphql-request` codegen plugin if preferred)
-- [ ] 7. Create `apps/frontend/tsconfig.json` (or modify existing):
+- [x] 1. Create directory: `mkdir apps/frontend`.
+- [x] 2. Navigate into the app: `cd apps/frontend`.
+- [x] 3. Initialize Vite project (React + TypeScript):
+     `yarn create vite . --template react-ts`
+     _(Confirm overwrite/proceed if prompted, as the directory exists)_.
+- [x] 4. Install dependencies: `yarn install`.
+- [ ] 5. Edit `apps/frontend/package.json`:
+
+  ```json
+  {
+    "name": "@apps/frontend",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module", // Keep type module for Vite
+    "scripts": {
+      "dev": "vite",
+      "build": "tsc && vite build",
+      "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+      "preview": "vite preview",
+      "generate": "graphql-codegen --config codegen.ts"
+    },
+    "dependencies": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0",
+      "@tanstack/react-query": "^5.0.0", // Use latest v5
+      "graphql-request": "^6.0.0", // For GraphQL client
+      "@packages/ui": "*",
+      "graphql": "^16.8.0" // Match backend version
+    },
+    "devDependencies": {
+      "@types/react": "^18.2.15",
+      "@types/react-dom": "^18.2.7",
+      "@typescript-eslint/eslint-plugin": "^6.0.0",
+      "@typescript-eslint/parser": "^6.0.0",
+      "@vitejs/plugin-react": "^4.0.3",
+      "eslint": "^8.45.0",
+      "eslint-plugin-react-hooks": "^4.6.0",
+      "eslint-plugin-react-refresh": "^0.4.3",
+      "typescript": "^5.0.2",
+      "vite": "^4.4.5",
+      "@packages/tsconfig": "*",
+      "@packages/eslint-config-custom": "*",
+      "@graphql-codegen/cli": "latest",
+      "@graphql-codegen/client-preset": "latest" // For frontend queries
+    }
+  }
+  ```
+
+- [ ] 6. Re-run `yarn install` to install the new/updated dependencies (like `@tanstack/react-query`, `graphql-request`, `@packages/ui`, codegen tools).
+
+- [ ] 7. Create/Modify `apps/frontend/tsconfig.json`:
 
   ```json
   {
     "extends": "@packages/tsconfig/base.json",
     "compilerOptions": {
-      // Vite defaults:
-      "target": "ESNext",
+      "target": "ES2020", // Update target
       "useDefineForClassFields": true,
-      "lib": ["DOM", "DOM.Iterable", "ESNext"],
-      "allowJs": false,
-      "skipLibCheck": true,
-      "esModuleInterop": false,
-      "allowSyntheticDefaultImports": true,
-      "strict": true,
-      "forceConsistentCasingInFileNames": true,
+      "lib": ["ES2020", "DOM", "DOM.Iterable"],
       "module": "ESNext",
-      "moduleResolution": "Node",
+      "skipLibCheck": true,
+
+      /* Bundler mode */
+      "moduleResolution": "bundler", // Use bundler resolution
+      "allowImportingTsExtensions": true,
       "resolveJsonModule": true,
       "isolatedModules": true,
-      "noEmit": true, // Vite handles emitting
-      "jsx": "react-jsx"
+      "noEmit": true,
+      "jsx": "react-jsx",
 
-      // Add paths if needed for easier imports (optional)
-      // "baseUrl": ".",
-      // "paths": {
-      //   "@/*": ["./src/*"]
-      // }
+      /* Linting */
+      "strict": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "noFallthroughCasesInSwitch": true,
+      "baseUrl": ".", // Important for path aliases if used
+      "paths": {
+        "@/*": ["./src/*"] // Example alias
+      }
     },
-    "include": ["src"],
-    // Reference base tsconfig
-    "references": [
-      { "path": "./tsconfig.node.json" },
-      { "path": "../../packages/tsconfig" }
-    ]
+    "include": ["src", "vite.config.ts"], // Include vite config
+    "references": [{ "path": "./tsconfig.node.json" }]
   }
   ```
 
-  _(Ensure `tsconfig.node.json` exists if referenced, as typical in Vite setups)_
+- [ ] 8. Create/Modify `apps/frontend/tsconfig.node.json` (for Vite/ESLint config loading):
 
-- [ ] 8. Create `apps/frontend/.eslintrc.js`:
+  ```json
+  {
+    "extends": "@packages/tsconfig/base.json", // Inherit base settings
+    "compilerOptions": {
+      "composite": true,
+      "skipLibCheck": true,
+      "module": "ESNext",
+      "moduleResolution": "bundler",
+      "allowSyntheticDefaultImports": true
+    },
+    "include": ["vite.config.ts", ".eslintrc.cjs"] // Include config files
+  }
+  ```
+
+- [ ] 9. Create/Modify `apps/frontend/.eslintrc.cjs` (adjust based on Vite template output):
+
   ```javascript
   module.exports = {
     root: true,
     env: { browser: true, es2020: true },
     extends: [
-      "@packages/eslint-config-custom",
-      "plugin:react/recommended",
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
       "plugin:react-hooks/recommended",
+      "@packages/eslint-config-custom", // Apply shared config
+      "prettier", // Ensure prettier is last
     ],
-    ignorePatterns: ["dist", ".eslintrc.cjs"], // Vite default has .cjs
-    parserOptions: { ecmaVersion: "latest", sourceType: "module" },
-    settings: { react: { version: "detect" } },
+    ignorePatterns: ["dist", ".eslintrc.cjs", "vite.config.ts", "codegen.ts"],
+    parser: "@typescript-eslint/parser",
     plugins: ["react-refresh"],
     rules: {
-      "react-refresh/only-export-components": "warn",
-      "react/react-in-jsx-scope": "off", // Not needed with new JSX transform
+      "react-refresh/only-export-components": [
+        "warn",
+        { allowConstantExport: true },
+      ],
+      // Add specific frontend rules if needed
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_" },
+      ],
+      // Allow JSX in TSX files
+      "react/jsx-uses-react": "off", // Not needed with new JSX transform
+      "react/react-in-jsx-scope": "off", // Not needed
+    },
+    settings: {
+      react: {
+        version: "detect", // Automatically detect React version
+      },
     },
   };
   ```
-- [ ] 9. Clean up default Vite files: Remove `src/App.css`, `src/index.css`, `src/assets/react.svg`, content of `src/App.tsx`.
-- [ ] 10. Set up providers in `apps/frontend/src/main.tsx`:
+
+- [ ] 10. Create/Modify `apps/frontend/vite.config.ts`:
 
   ```typescript
-  import React from "react";
-  import ReactDOM from "react-dom/client";
-  import { BrowserRouter } from "react-router-dom";
-  import { ChakraProvider } from "@chakra-ui/react";
-  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-  import App from "./App";
-  // import theme from './theme'; // Optional: Create custom theme
+  import { defineConfig } from "vite";
+  import react from "@vitejs/plugin-react";
+  import path from "path"; // Import path module
 
-  const queryClient = new QueryClient();
-
-  ReactDOM.createRoot(document.getElementById("root")!).render(
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <ChakraProvider /* theme={theme} */>
-            <App />
-          </ChakraProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </React.StrictMode>
-  );
+  // https://vitejs.dev/config/
+  export default defineConfig({
+    plugins: [react()],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"), // Setup alias
+      },
+    },
+    server: {
+      port: 3000, // Set desired frontend port
+      proxy: {
+        // Proxy API requests to the backend during development
+        "/graphql": {
+          target: "http://localhost:4000", // Backend server URL
+          changeOrigin: true,
+          // No need to rewrite path if backend serves at /graphql
+        },
+      },
+    },
+  });
   ```
 
-- [ ] 11. Set up basic routing in `apps/frontend/src/App.tsx`:
-
-  ```typescript
-  import { Routes, Route } from "react-router-dom";
-  import { Box } from "@chakra-ui/react";
-  import HealthCheckPage from "./pages/HealthCheckPage"; // Create this page
-
-  function App() {
-    return (
-      <Box p={4}>
-        <Routes>
-          <Route path="/" element={<HealthCheckPage />} />
-          {/* Add other routes later */}
-        </Routes>
-      </Box>
-    );
-  }
-
-  export default App;
-  ```
-
-- [ ] 12. Create `apps/frontend/src/lib/graphqlClient.ts`:
-
-  ```typescript
-  import { GraphQLClient } from "graphql-request";
-
-  const API_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:4000/graphql";
-
-  export const graphqlClient = new GraphQLClient(API_URL);
-
-  // Optional: Add request interceptor for auth headers later
-  // graphqlClient.setHeaders({
-  //   authorization: `Bearer ${getToken()}`,
-  // });
-  ```
-
-- [ ] 13. Create `apps/frontend/src/pages/HealthCheckPage.tsx`:
-
-  ```typescript
-  import { useQuery } from "@tanstack/react-query";
-  import {
-    Box,
-    Heading,
-    Text,
-    Spinner,
-    Alert,
-    AlertIcon,
-  } from "@chakra-ui/react";
-  import { Button as SharedButton } from "@packages/ui"; // Import shared component
-  import { graphqlClient } from "../lib/graphqlClient";
-  // Import generated query/types later after codegen
-  // import { HealthDocument, HealthQuery } from '../generated/graphql';
-
-  // Define query manually first (or use string directly)
-  const HEALTH_QUERY = `
-    query Health {
-      health
-    }
-  `;
-
-  const fetchHealth = async (): Promise<{ health: string }> => {
-    // Replace with generated document later:
-    // return graphqlClient.request(HealthDocument);
-    return graphqlClient.request(HEALTH_QUERY);
-  };
-
-  function HealthCheckPage() {
-    const { data, isLoading, error, refetch } = useQuery<
-      { health: string },
-      Error
-    >({
-      queryKey: ["health"],
-      queryFn: fetchHealth,
-    });
-
-    return (
-      <Box>
-        <Heading mb={4}>Frontend Health Check</Heading>
-        {isLoading && <Spinner />}
-        {error && (
-          <Alert status="error" mb={4}>
-            <AlertIcon />
-            Error fetching health: {error.message}
-          </Alert>
-        )}
-        {data && (
-          <Text mb={4}>
-            Backend Health Status: <strong>{data.health}</strong>
-          </Text>
-        )}
-        <SharedButton onClick={() => refetch()}>
-          Check Again (Shared Button)
-        </SharedButton>
-      </Box>
-    );
-  }
-
-  export default HealthCheckPage;
-  ```
-
-- [ ] 14. Create GraphQL Codegen configuration (`apps/frontend/codegen.ts`):
+- [ ] 11. Create `apps/frontend/codegen.ts` (GraphQL Codegen config for frontend):
 
   ```typescript
   import type { CodegenConfig } from "@graphql-codegen/cli";
 
-  const API_URL = process.env.VITE_API_URL || "http://localhost:4000/graphql";
-
   const config: CodegenConfig = {
     overwrite: true,
-    schema: API_URL,
-    documents: "src/**/*.tsx", // Scan components for gql tags or imported .graphql files
+    // Point to the backend schema, assuming it's running or accessible
+    // Use introspection for a running server or point to the schema file
+    // Option 1: Introspection (if backend is running)
+    schema: "http://localhost:4000/graphql",
+    // Option 2: Point to schema file (if backend not running during generation)
+    // schema: '../backend/src/schema.ts', // Adjust path as necessary
+    documents: "src/**/*.graphql", // Scan for .graphql files in src
     generates: {
       "src/generated/graphql.ts": {
-        // Choose ONE preset based on preference:
-        // Option A: TanStack Query preset (generates hooks)
-        // preset: 'client', // if using @graphql-codegen/client-preset
-        plugins: [
-          "typescript",
-          "typescript-operations",
-          "typescript-react-query", // Generates TanStack Query hooks
-        ],
+        // Use client-preset for typed Query/Mutation hooks (requires TanStack Query)
+        preset: "client",
+        plugins: [], // client-preset handles necessary plugins
         config: {
-          fetcher: {
-            // Configure how hooks fetch data
-            func: "../lib/graphqlClient#graphqlClient.request", // Point to your client instance method
-            isReactHook: false, // Important if client instance isn't a hook
-          },
-          // Optional: Add scalar types if needed
+          // Configuration for the client preset
+          // Ensure generated types match your setup
         },
-        presetConfig: {
-          // Config for client-preset if used
-          // gqlTagName: 'gql', // Optional: specify gql tag name
-        },
-        // Option B: GraphQL Request preset (generates typed client functions)
-        // plugins: ['typescript', 'typescript-operations', 'typescript-graphql-request'],
-        // config: {
-        //   rawRequest: false, // Set true for file uploads etc.
-        // },
       },
-      // Optional: Generate introspection file
-      // './graphql.schema.json': {
-      //   plugins: ['introspection'],
-      // },
     },
-    hooks: {
-      afterAllFileWrite: "prettier --write", // Format generated files
-    },
+    // If using Option 2 (schema file), you might need ts-node
+    // require: ['ts-node/register']
   };
 
   export default config;
   ```
 
-- [ ] 15. Add `generate` script to `apps/frontend/package.json`: `"generate": "graphql-codegen --config codegen.ts"`.
-- [ ] 16. Generate frontend GraphQL types/hooks: `yarn generate`. _(This might fail if the backend server isn't running yet)_.
-- [ ] 17. Update `HealthCheckPage.tsx` to use generated types/document:
-  - Uncomment/add import: `import { HealthDocument } from '../generated/graphql';`
-  - Modify `fetchHealth` to use `HealthDocument`.
-  - Modify `useQuery` to use the generated hook if using `typescript-react-query` plugin, or keep manual fetch with generated types if using `graphql-request` plugin.
+- [ ] 12. Create a sample GraphQL query file `apps/frontend/src/graphql/healthCheck.graphql`:
+      _(Create the `src/graphql` directory first: `mkdir -p src/graphql`)_
+
+  ```graphql
+  # apps/frontend/src/graphql/healthCheck.graphql
+  query HealthCheck {
+    healthCheck {
+      status
+    }
+  }
+  ```
+
+- [ ] 13. Run GraphQL Code Generator for the frontend: `yarn generate`.
+      _(Requires the backend server to be running if using schema introspection. Creates `apps/frontend/src/generated/graphql.ts`)_
+
+- [ ] 14. Create a React Query client setup in `apps/frontend/src/lib/react-query.ts`:
+      _(Create the `src/lib` directory first: `mkdir -p src/lib`)_
+
+  ```typescript
+  // apps/frontend/src/lib/react-query.ts
+  import { QueryClient } from "@tanstack/react-query";
+  import { GraphQLClient } from "graphql-request";
+
+  // Create a GraphQL client instance
+  // The Vite proxy will handle routing this to the backend in development
+  export const gqlClient = new GraphQLClient("/graphql");
+
+  // Create a react-query client instance
+  export const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Default query options can go here
+        staleTime: 1000 * 10, // 10 seconds
+        retry: 1,
+      },
+    },
+  });
+
+  // Helper type forTanStack Query + GraphQL Request integration if needed later
+  // export const fetcher = <TData, TVariables>(
+  //   query: string,
+  //   variables?: TVariables
+  // ) => {
+  //   return async (): Promise<TData> => gqlClient.request<TData, TVariables>(query, variables);
+  // };
+  ```
+
+- [ ] 15. Modify `apps/frontend/src/main.tsx` to wrap the app with `QueryClientProvider`:
+
+  ```typescript
+  import React from 'react'
+  import ReactDOM from 'react-dom/client'
+  import App from './App.tsx'
+  import './index.css'
+  import { QueryClientProvider } from '@tanstack/react-query'
+  import { queryClient } from '@/lib/react-query' // Import query client
+
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <React.StrictMode>
+      <QueryClientProvider client={queryClient}> {/* Wrap App */}
+        <App />
+      </QueryClientProvider>
+    </React.StrictMode>,
+  )
+  ```
+
+- [ ] 16. Modify `apps/frontend/src/App.tsx` to use the generated query hook and shared UI component:
+
+  ```typescript
+  import './App.css'
+  import { Button } from '@packages/ui' // Import shared UI button
+  import { useHealthCheckQuery } from '@/generated/graphql' // Import generated hook
+  import { gqlClient } from '@/lib/react-query' // Import gqlClient
+
+  function App() {
+    // Use the generated TanStack Query hook
+    const { data, isLoading, error, refetch } = useHealthCheckQuery(
+      gqlClient, // Pass the graphql-request client
+      {},
+      {
+        // Optional TanStack Query options
+        refetchOnWindowFocus: false,
+      }
+    );
+
+    return (
+      <>
+        <h1>Vite + React + GraphQL + TanStack Query</h1>
+        <div className="card">
+          <Button onClick={() => refetch()}>
+            Check Backend Health
+          </Button>
+          <p>
+            Backend Status: {isLoading ? 'Loading...' : error ? `Error: ${error.message}` : data?.healthCheck?.status}
+          </p>
+        </div>
+        <p className="read-the-docs">
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </>
+    )
+  }
+
+  export default App
+
+  ```
+
+- [ ] 17. Build the frontend application: `yarn build`.
+
 - [ ] 18. Go back to the root directory: `cd ../..`.
 
 ---
 
-## VI. Connecting & Running Locally
+## VI. Root Scripts & Integration
 
-- [ ] 1. Ensure Docker container `my-app-db-local` is running (`docker-compose up -d`).
-- [ ] 2. Run `yarn install` at the root directory to link all workspaces.
-- [ ] 3. Add root-level scripts to the main `package.json`:
+- [ ] 1. Modify the root `package.json` to add Turborepo scripts:
+
   ```json
+  {
+    "name": "direct-monorepo",
+    "private": true,
+    "workspaces": {
+      "packages": ["packages/*", "apps/*"]
+    },
+    "packageManager": "yarn@1.22.19",
     "scripts": {
-      "dev": "turbo run dev --parallel",
       "build": "turbo run build",
+      "dev": "turbo run dev --parallel", // Run frontend and backend dev scripts concurrently
       "lint": "turbo run lint",
       "clean": "turbo run clean && rimraf node_modules",
-      "generate": "turbo run generate --parallel",
+      "format": "prettier --write \"**/*.{ts,tsx,md,json}\"", // Add formatting script
+      "generate": "turbo run generate", // Run codegen in respective packages
       "db:migrate:dev": "turbo run db:migrate:dev",
       "db:generate": "turbo run db:generate",
-      "format": "prettier --write \"**/*.{ts,tsx,md,json}\""
+      "db:studio": "cd packages/database && yarn db:studio" // Need to cd into package
     },
+    "devDependencies": {
+      "turbo": "latest",
+      "typescript": "^5.0.0", // Ensure consistent TS version
+      "prettier": "latest",
+      "eslint": "^8.57.0", // Ensure consistent ESLint
+      "@packages/tsconfig": "*",
+      "@packages/eslint-config-custom": "*",
+      "rimraf": "^3.0.2" // Add rimraf for clean script
+    }
+  }
   ```
-- [ ] 4. Run code generation for all packages: `yarn generate`. _(Backend must be runnable or schema available for frontend codegen)_.
-- [ ] 5. Start development servers: `yarn dev`.
-- [ ] 6. Verify backend: Open `http://localhost:4000/graphql` in browser (if Apollo Sandbox is enabled) or `http://localhost:4000/health`. Run the health query.
-- [ ] 7. Verify frontend: Open `http://localhost:5173` (or the port Vite assigns). Check if the health check page loads and displays "OK" from the backend. Check browser console for errors.
-- [ ] 8. Test the "Check Again" button on the frontend.
+
+- [ ] 2. Re-run `yarn install` in the root directory to install `rimraf` and ensure all workspace dependencies are linked correctly.
+
+- [ ] 3. **How to Run:**
+  - Start the database: `docker-compose up -d` (if not already running).
+  - Run database migrations/generation (first time or after schema changes):
+    `yarn db:migrate:dev`
+    `yarn db:generate`
+  - Generate GraphQL types (backend & frontend):
+    `yarn generate` (requires backend to be running for frontend introspection)
+  - Start both frontend and backend in development mode: `yarn dev`.
+    - Backend will be available at `http://localhost:4000` (GraphQL at `/graphql`).
+    - Frontend will be available at `http://localhost:3000`.
 
 ---
 
-**Checklist Complete:** [ ] Yes
+## VII. Final Steps & Verification
+
+- [ ] 1. Verify the application runs correctly:
+
+  - Open the frontend (`http://localhost:3000`).
+  - Click the "Check Backend Health" button.
+  - Confirm the status updates to "OK" (indicating the frontend called the backend, which successfully wrote to the database).
+  - Optionally, check the database using `yarn db:studio` to see the `HealthCheck` entries.
+
+- [ ] 2. Run linters and formatters:
+
+  - `yarn lint`
+  - `yarn format`
+
+- [ ] 3. Build the entire project: `yarn build`.
+
+- [ ] 4. Add all files to Git and make an initial commit:
+
+  - `git add .`
+  - `git commit -m "Initial project scaffold following checklist"`
+
+- [ ] 5. Update the **Status** at the top of this checklist to `[x] Completed`.
+
+---
