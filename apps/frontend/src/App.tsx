@@ -8,8 +8,6 @@ import {
   HealthCheckDocument,
   HealthCheckQuery,
 } from "./generated/graphql/graphql"; // Path relative to src/
-// @ts-ignore // Suppress unused import error needed for JSX types pre-React 17 transform setup
-import React from "react";
 import { gqlClient } from "./lib/react-query"; // Path relative to src/
 
 function App() {
