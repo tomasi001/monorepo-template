@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+*.log
+.env
+.env.*
+!.env.example
+
+# Build Artifacts
+dist/
+build/
+.turbo/
+
+# OS / Editor
+.DS_Store
+*.local
+.vscode/
+
+# Prisma
+packages/database/prisma/*.db*
+
+# Vite
+apps/frontend/dist/
+apps/frontend/.vite/ 
