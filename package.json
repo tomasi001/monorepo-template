@@ -24,12 +24,12 @@
     "db:studio": "cd packages/database && yarn db:studio"
   },
   "devDependencies": {
+    "@packages/eslint-config-custom": "*",
+    "@packages/tsconfig": "*",
     "eslint": "^9.25.1",
     "prettier": "^3.5.3",
-    "turbo": "^2.5.0",
-    "typescript": "^5.8.3",
-    "@packages/tsconfig": "*",
-    "@packages/eslint-config-custom": "*",
-    "rimraf": "^3.0.2"
+    "rimraf": "^6.0.1",
+    "turbo": "^2.5.1",
+    "typescript": "^5.8.3"
   }
 }

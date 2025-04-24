@@ -2,8 +2,8 @@ import { QueryClient } from "@tanstack/react-query";
 import { GraphQLClient } from "graphql-request";
 
 // Create a GraphQL client instance
-// The Vite proxy will handle routing this to the backend in development
-export const gqlClient = new GraphQLClient("/graphql");
+// Use the full path from the frontend's perspective; Vite proxy will handle it.
+export const gqlClient = new GraphQLClient("http://localhost:3000/graphql");
 
 // Create a react-query client instance
 export const queryClient = new QueryClient({

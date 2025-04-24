@@ -2,7 +2,8 @@
   "extends": "@packages/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "module": "CommonJS", // Node typically uses CommonJS
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "resolveJsonModule": true
   },
   "include": ["src"],

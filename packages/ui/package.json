@@ -20,13 +20,13 @@
   "devDependencies": {
     "@packages/eslint-config-custom": "*",
     "@packages/tsconfig": "*",
-    "@types/react": "^18.0.0",
-    "eslint": "^8.57.0",
+    "@types/react": "^19.1.2",
+    "eslint": "^9.25.1",
     "eslint-config-prettier": "^10.1.2",
     "globals": "^16.0.0",
-    "react": "^18.2.0",
-    "rimraf": "^3.0.2",
-    "tsup": "^6.0.0",
+    "react": "^19.1.0",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.4.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.31.0"
   }

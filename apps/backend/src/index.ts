@@ -1,10 +1,12 @@
 import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
-import type { PrismaClient } from "@packages/database"; // Import PrismaClient type
-import prisma from "@packages/database"; // Import prisma client instance
+import { PrismaClient } from "@prisma/client"; // Import directly from @prisma/client
 import "dotenv/config"; // Load .env file
-import resolvers from "./resolvers"; // Load resolvers (assuming it exports default)
-import typeDefs from "./schema"; // Load schema (assuming it exports default)
+import resolvers from "./resolvers.js"; // Load resolvers (assuming it exports default)
+import typeDefs from "./schema.js"; // Load schema (assuming it exports default)
+
+// Create a local Prisma client instance
+const prisma = new PrismaClient();
 
 // Define the ContextValue interface
 export interface ContextValue {

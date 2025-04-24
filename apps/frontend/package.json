@@ -12,30 +12,30 @@
     "clean": "rimraf dist .turbo node_modules .vite"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@tanstack/react-query": "^5.0.0",
-    "graphql-request": "^6.0.0",
     "@packages/ui": "*",
-    "graphql": "^16.8.0"
+    "@tanstack/react-query": "^5.0.0",
+    "graphql": "^16.8.0",
+    "graphql-request": "^7.1.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.15",
-    "@types/react-dom": "^18.2.7",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "@vitejs/plugin-react": "^4.0.3",
-    "eslint": "^8.45.0",
-    "eslint-config-prettier": "latest",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.3",
-    "typescript": "^5.0.2",
-    "typescript-eslint": "latest",
-    "vite": "^4.4.5",
-    "@packages/tsconfig": "*",
-    "@packages/eslint-config-custom": "*",
     "@graphql-codegen/cli": "latest",
     "@graphql-codegen/client-preset": "latest",
-    "ts-node": "^10.9.0"
+    "@packages/eslint-config-custom": "*",
+    "@packages/tsconfig": "*",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@typescript-eslint/eslint-plugin": "^8.31.0",
+    "@typescript-eslint/parser": "^8.31.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "eslint": "^9.25.1",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.2",
+    "typescript-eslint": "latest",
+    "vite": "^6.3.2"
   }
 }

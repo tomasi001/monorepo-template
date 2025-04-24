@@ -5,14 +5,14 @@
   "license": "MIT",
   "main": "index.js",
   "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-config-turbo": "^2.5.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.0",
+    "@typescript-eslint/parser": "^8.31.0",
+    "eslint-config-prettier": "^10.1.2",
+    "eslint-config-turbo": "^2.5.1",
     "eslint-plugin-react": "^7.37.5"
   },
   "devDependencies": {
-    "eslint": "^8.57.0"
+    "eslint": "^9.25.1"
   },
   "peerDependencies": {
     "eslint": "^8.0.0"
