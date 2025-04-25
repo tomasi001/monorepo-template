@@ -326,6 +326,20 @@ export type ResolversParentTypes = ResolversObject<{
   String: Scalars["String"]["output"];
 }>;
 
+export type RestDirectiveArgs = {
+  hidden?: Maybe<Scalars["Boolean"]["input"]>;
+  method: Scalars["String"]["input"];
+  path: Scalars["String"]["input"];
+  tag?: Maybe<Scalars["String"]["input"]>;
+};
+
+export type RestDirectiveResolver<
+  Result,
+  Parent,
+  ContextType = ContextValue,
+  Args = RestDirectiveArgs,
+> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
+
 export type HealthCheckStatusResolvers<
   ContextType = ContextValue,
   ParentType extends
@@ -517,4 +531,8 @@ export type Resolvers<ContextType = ContextValue> = ResolversObject<{
   Payment?: PaymentResolvers<ContextType>;
   PaymentResponse?: PaymentResponseResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+}>;
+
+export type DirectiveResolvers<ContextType = ContextValue> = ResolversObject<{
+  rest?: RestDirectiveResolver<any, any, ContextType>;
 }>;
