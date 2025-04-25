@@ -1,0 +1,11 @@
+mutation UpdatePaymentStatus($id: String!, $status: String!) {
+  updatePaymentStatus(id: $id, status: $status) {
+    statusCode
+    success
+    message
+    data {
+      id
+      status
+    }
+  }
+}

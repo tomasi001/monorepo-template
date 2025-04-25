@@ -1,55 +1,77 @@
 import { ApolloServer } from "@apollo/server";
-import { startStandaloneServer } from "@apollo/server/standalone";
-import { PrismaClient } from "@prisma/client"; // Import directly from @prisma/client
-import "dotenv/config"; // Load .env file
-import resolvers from "./resolvers.js"; // Load resolvers (assuming it exports default)
-import typeDefs from "./schema.js"; // Load schema (assuming it exports default)
+import { expressMiddleware } from "@apollo/server/express4";
+import express from "express";
+import { PrismaClient } from "@packages/database";
+import "dotenv/config";
+import resolvers from "./resolvers.js";
+import typeDefs from "./schema.js";
+import Stripe from "stripe";
+import swaggerJsdoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import cors from "cors";
 
-// Create a local Prisma client instance
 const prisma = new PrismaClient();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2023-10-16",
+});
 
-// Define the ContextValue interface
 export interface ContextValue {
   prisma: PrismaClient;
+  stripe: Stripe;
   token?: string;
 }
 
-async function startServer() {
-  // Note: We are removing the manual Express app setup as startStandaloneServer handles it.
-  // If you need custom Express middleware later, you'll need to switch back
-  // to the expressMiddleware integration pattern.
+const app = express();
 
-  // The ApolloServer constructor requires two parameters: your schema
-  // definition and your set of resolvers.
+app.use(cors());
+app.use(express.json());
+
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "QR Menu API",
+      version: "1.0.0",
+      description: "API for QR-based menu and ordering system",
+    },
+  },
+  apis: ["./src/**/*.resolver.ts"],
+};
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+app.use(
+  "/api/docs",
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  swaggerUi.serve as any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  swaggerUi.setup(swaggerSpec) as any
+);
+
+async function startServer() {
   const server = new ApolloServer<ContextValue>({
-    // Use ContextValue here
     typeDefs,
     resolvers,
-    // Note: The Drain plugin is typically used with expressMiddleware.
-    // startStandaloneServer handles graceful shutdown implicitly.
-    // If you need fine-grained control, consider using expressMiddleware.
-    // plugins: [ApolloServerPluginDrainHttpServer({ httpServer })], // Removed for startStandaloneServer
   });
 
-  // Passing an ApolloServer instance to the `startStandaloneServer` function:
-  //  1. creates an Express app
-  //  2. installs your ApolloServer instance as middleware
-  //  3. prepares your app to handle incoming requests
-  const { url } = await startStandaloneServer(server, {
-    // Pass server instance
-    context: async ({ req }) => ({
-      // Update context function signature
-      prisma, // Pass prisma client to resolvers
-      token: req.headers.token as string | undefined, // Explicitly handle token type
-    }),
-    listen: { port: 4000 }, // Specify the port
-  });
+  await server.start();
+  app.use(
+    "/graphql",
+    expressMiddleware(server, {
+      context: async ({ req }) => ({
+        prisma,
+        stripe,
+        token: req.headers.token as string | undefined,
+      }),
+    })
+  );
 
-  console.log(`🚀 Server ready at ${url}`);
+  app.listen(4000, () => {
+    console.log(`🚀 Server ready at http://localhost:4000/graphql`);
+    console.log(`📜 Swagger UI at http://localhost:4000/api/docs`);
+  });
 }
 
 startServer().catch((error) => {
   console.error("Failed to start the server:", error);
-  prisma.$disconnect(); // Ensure Prisma disconnects on error
+  prisma.$disconnect();
   process.exit(1);
 });

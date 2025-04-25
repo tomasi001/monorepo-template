@@ -1,0 +1,13 @@
+mutation InitiatePayment($input: InitiatePaymentInput!) {
+  initiatePayment(input: $input) {
+    statusCode
+    success
+    message
+    data {
+      id
+      amount
+      status
+      stripeId
+    }
+  }
+}

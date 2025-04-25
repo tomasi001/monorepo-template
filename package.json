@@ -14,7 +14,7 @@
   "license": "MIT",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
+    "dev": "set -o allexport; source .env; set +o allexport && turbo run dev --parallel",
     "lint": "turbo run lint",
     "clean": "turbo run clean && rimraf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
@@ -31,5 +31,9 @@
     "rimraf": "^6.0.1",
     "turbo": "^2.5.1",
     "typescript": "^5.8.3"
+  },
+  "resolutions": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   }
 }

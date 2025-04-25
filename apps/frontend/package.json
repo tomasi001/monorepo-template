@@ -13,6 +13,8 @@
   },
   "dependencies": {
     "@packages/ui": "*",
+    "@stripe/react-stripe-js": "^3.6.0",
+    "@stripe/stripe-js": "^7.2.0",
     "@tanstack/react-query": "^5.0.0",
     "graphql": "^16.8.0",
     "graphql-request": "^7.1.2",
@@ -22,6 +24,10 @@
   "devDependencies": {
     "@graphql-codegen/cli": "latest",
     "@graphql-codegen/client-preset": "latest",
+    "@tailwindcss/vite": "^4.1.4",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.4",
     "@packages/eslint-config-custom": "*",
     "@packages/tsconfig": "*",
     "@types/react": "^19.1.2",
@@ -33,9 +39,11 @@
     "eslint-config-prettier": "latest",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.3",
+    "globals": "latest",
+    "rimraf": "^6.0.1",
     "ts-node": "^10.9.0",
     "typescript": "^5.0.2",
     "typescript-eslint": "latest",
-    "vite": "^6.3.2"
+    "vite": "^6.3.3"
   }
 }

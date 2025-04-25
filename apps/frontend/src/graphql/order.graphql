@@ -1,0 +1,22 @@
+query Order($id: String!) {
+  order(id: $id) {
+    statusCode
+    success
+    message
+    data {
+      id
+      total
+      status
+      items {
+        menuItem {
+          name
+        }
+        quantity
+      }
+      payment {
+        amount
+        status
+      }
+    }
+  }
+}

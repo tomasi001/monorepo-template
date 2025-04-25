@@ -1,0 +1,19 @@
+query Menu($qrCode: String!) {
+  menu(qrCode: $qrCode) {
+    statusCode
+    success
+    message
+    data {
+      id
+      name
+      qrCode
+      items {
+        id
+        name
+        description
+        price
+        available
+      }
+    }
+  }
+}

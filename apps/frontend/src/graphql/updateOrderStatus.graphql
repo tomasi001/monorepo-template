@@ -1,0 +1,11 @@
+mutation UpdateOrderStatus($id: String!, $status: String!) {
+  updateOrderStatus(id: $id, status: $status) {
+    statusCode
+    success
+    message
+    data {
+      id
+      status
+    }
+  }
+}

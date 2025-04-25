@@ -1,0 +1,21 @@
+mutation CreateOrder($input: CreateOrderInput!) {
+  createOrder(input: $input) {
+    statusCode
+    success
+    message
+    data {
+      id
+      menuId
+      total
+      status
+      items {
+        menuItemId
+        quantity
+        price
+        menuItem {
+          name
+        }
+      }
+    }
+  }
+}

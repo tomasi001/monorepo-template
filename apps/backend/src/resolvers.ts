@@ -1,7 +1,9 @@
 // apps/backend/src/resolvers.ts
 import type { Resolvers } from "./generated/graphql-types.js"; // Import generated types
 import { ContextValue } from "./index.js"; // Import ContextValue
-import { GraphQLResolveInfo } from "graphql"; // Import GraphQLResolveInfo for parent type if needed
+import { menuResolver } from "./menu/resolvers/menu.resolver.js";
+import { orderResolver } from "./order/resolvers/order.resolver.js";
+import { paymentResolver } from "./payment/resolvers/payment.resolver.js";
 
 // Provide resolver functions for your schema fields
 const resolvers: Resolvers<ContextValue> = {
@@ -9,8 +11,7 @@ const resolvers: Resolvers<ContextValue> = {
     healthCheck: async (
       _parent: unknown, // Typically unused, type as unknown or use specific parent type if needed
       _args: Record<string, never>, // Assuming no arguments for healthCheck, use {} or specific args type
-      context: ContextValue, // Use the imported ContextValue
-      _info: GraphQLResolveInfo // Optional: if you need resolver info
+      context: ContextValue // Use the imported ContextValue
     ): Promise<{ status: string }> => {
       // Explicit return type
       // Example: Perform a quick DB check
@@ -26,11 +27,13 @@ const resolvers: Resolvers<ContextValue> = {
         return { status: "Error connecting to DB" };
       }
     },
+    ...menuResolver.Query,
+    ...orderResolver.Query,
   },
-  // Add Mutation resolvers here
-  // Mutation: {
-  //   ...
-  // }
+  Mutation: {
+    ...orderResolver.Mutation,
+    ...paymentResolver.Mutation,
+  },
 };
 
 export default resolvers;

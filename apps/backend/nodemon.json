@@ -1,0 +1,6 @@
+{
+  "watch": ["src", "../../.env"],
+  "ext": "ts,json",
+  "ignore": ["src/**/*.spec.ts", "src/generated/*"],
+  "exec": "node --env-file=../../.env dist/index.js"
+}
