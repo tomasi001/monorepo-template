@@ -86,7 +86,7 @@
 
 #### 2. GraphQL Schema
 
-- [x] Update `apps/backend/src/schema.ts`: (Updated Mutations, added `CreatePaymentIntentResponse`, `CreateOrderFromPaymentResponse`, related inputs/types)
+- [x] Update `apps/backend/src/schema.ts`: (Added `createSetupIntent` mutation, related types, and `customerId` field to `CreatePaymentIntentInput`)
 
   ```typescript
   import { gql } from "graphql-tag";
@@ -103,7 +103,7 @@
 
   const typeDefs = gql`
     ${directiveDefs}
-
+  
     type Query {
       healthCheck: HealthCheckStatus!
         @rest(path: "/health", method: "POST", tag: "Health")
@@ -116,32 +116,34 @@
       generateQrCode(text: String!): QrCodeResponse!
         @rest(path: "/qr/generate", method: "POST", tag: "QRCode")
     }
-
+  
     type HealthCheckStatus {
       status: String!
     }
-
+  
     type Mutation {
       createMenu(input: CreateMenuInput!): MenuResponse!
         @rest(path: "/menu", method: "POST", tag: "Menu")
-
-      # New payment flow
-      createPaymentIntent(
-        input: CreatePaymentIntentInput!
-      ): CreatePaymentIntentResponse!
+  
+      # Setup Intent to save card details securely before final payment
+      createSetupIntent: CreateSetupIntentResponse!
+        @rest(path: "/payment/setup-intent", method: "POST", tag: "Payment")
+  
+      # Payment Intent created just before confirming payment
+      createPaymentIntent(input: CreatePaymentIntentInput!): CreatePaymentIntentResponse!
         @rest(path: "/payment/intent", method: "POST", tag: "Payment")
-      createOrderFromPayment(
-        input: CreateOrderFromPaymentInput!
-      ): CreateOrderFromPaymentResponse!
+  
+      # Order created after successful payment confirmation
+      createOrderFromPayment(input: CreateOrderFromPaymentInput!): CreateOrderFromPaymentResponse!
         @rest(path: "/order/from-payment", method: "POST", tag: "Order")
-
+  
       # Status updates
       updateOrderStatus(id: String!, status: String!): OrderResponse!
         @rest(path: "/orders/{id}/status", method: "POST", tag: "Order")
       updatePaymentStatus(id: String!, status: String!): PaymentResponse!
         @rest(path: "/payments/{id}/status", method: "POST", tag: "Payment")
     }
-
+  
     # Standard Response Wrappers
     type MenuResponse {
       statusCode: Int!
@@ -149,43 +151,50 @@
       message: String!
       data: Menu # Nullable on error
     }
-
+  
     type OrderResponse {
       statusCode: Int!
       success: Boolean!
       message: String!
       data: Order # Nullable on error
     }
-
+  
     type PaymentResponse {
       statusCode: Int!
       success: Boolean!
       message: String!
       data: Payment # Nullable on error
     }
-
+  
     type QrCodeResponse {
       statusCode: Int!
       success: Boolean!
       message: String!
       data: String # Base64 data URL or error message
     }
-
+  
     # Specific Response Wrappers for New Flow
+    type CreateSetupIntentResponse {
+      statusCode: Int!
+      success: Boolean!
+      message: String
+      data: CreateSetupIntentData
+    }
+  
     type CreatePaymentIntentResponse {
       statusCode: Int!
       success: Boolean!
       message: String
       data: CreatePaymentIntentData
     }
-
+  
     type CreateOrderFromPaymentResponse {
       statusCode: Int!
       success: Boolean!
       message: String
       data: Order
     }
-
+  
     # Domain Types
     type Menu {
       id: ID!
@@ -196,7 +205,7 @@
       createdAt: String! # ISO String
       updatedAt: String! # ISO String
     }
-
+  
     type MenuItem {
       id: ID!
       name: String!
@@ -206,7 +215,7 @@
       createdAt: String!
       updatedAt: String!
     }
-
+  
     type Order {
       id: ID!
       menuId: ID!
@@ -217,7 +226,7 @@
       createdAt: String!
       updatedAt: String!
     }
-
+  
     type OrderItem {
       id: ID!
       menuItemId: ID!
@@ -227,7 +236,7 @@
       createdAt: String!
       updatedAt: String!
     }
-
+  
     type Payment {
       id: ID!
       orderId: ID!
@@ -237,29 +246,34 @@
       createdAt: String!
       updatedAt: String!
     }
-
+  
     # Data payload for CreatePaymentIntentResponse
     type CreatePaymentIntentData {
       paymentIntentId: String! # Stripe Payment Intent ID (pi_...)
       clientSecret: String! # Client secret for frontend confirmation
     }
-
+  
     # Input Types
     input CreateMenuInput {
       name: String!
       qrCode: String!
     }
-
+  
     input OrderItemInput {
       menuItemId: ID!
       quantity: Int!
     }
-
-    input CreatePaymentIntentInput {
-      amount: Float! # Total amount calculated from cart
-      currency: String! # e.g., "usd"
+  
+    input CreateSetupIntentInput { # May not be needed if no args
+      # Potential future fields like metadata
     }
-
+  
+    input CreatePaymentIntentInput {
+      amount: Float!
+      currency: String!
+      customerId: String # Added optional customer ID
+    }
+  
     input CreateOrderFromPaymentInput {
       paymentIntentId: String! # The Stripe Payment Intent ID (pi_...)
       menuId: ID!
@@ -707,7 +721,7 @@
     items: OrderItem[];
     status: string; // PENDING, CONFIRMED, COMPLETED, CANCELLED
     total: number;
-    payment?: Payment; // Relation remains optional
+    payment: Payment # Relation remains optional
     createdAt: Date;
     updatedAt: Date;
   }
@@ -1122,19 +1136,27 @@
 
 #### 5. Payment Domain
 
-- [x] Create `apps/backend/src/payment/dtos/create-payment-intent.dto.ts`: (New DTO for createPaymentIntent)
+- [x] Create `apps/backend/src/payment/dtos/create-payment-intent.dto.ts`: (Updated to include optional `customerId`)
 
   ```typescript
   export interface CreatePaymentIntentInputDto {
     amount: number;
     currency: string;
+    customerId?: string; // Optional customer ID
   }
   ```
 
-- [x] Remove `apps/backend/src/payment/dtos/initiate-payment.dto.ts` (Old DTO, no longer needed)
-- [x] Remove `apps/backend/src/payment/dtos/update-payment.dto.ts` (Update uses primitive types)
+- [ ] Create `apps/backend/src/payment/dtos/create-setup-intent.dto.ts`: (Likely empty or not needed if mutation takes no args)
 
-- [x] Create `apps/backend/src/payment/entities/payment.entity.ts`: (Unchanged, but `stripeId` now holds Payment Intent ID)
+  ```typescript
+  // Currently no specific DTO needed as createSetupIntent takes no arguments
+  // export interface CreateSetupIntentInputDto {}
+  ```
+
+- [x] Remove `apps/backend/src/payment/dtos/initiate-payment.dto.ts`
+- [x] Remove `apps/backend/src/payment/dtos/update-payment.dto.ts`
+
+- [x] Create `apps/backend/src/payment/entities/payment.entity.ts`: (Unchanged)
 
   ```typescript
   export interface Payment {
@@ -1148,66 +1170,62 @@
   }
   ```
 
-- [x] Create `apps/backend/src/payment/resolvers/payment.resolver.ts`: (Updated Mutations for new flow)
+- [x] Create `apps/backend/src/payment/resolvers/payment.resolver.ts`: (Added `createSetupIntent`, updated imports)
 
   ```typescript
   import { PaymentService } from "../services/payment.service.js";
   import {
     PaymentResponse,
-    CreatePaymentIntentResponse, // Added response type
+    CreatePaymentIntentResponse,
+    CreateSetupIntentResponse, // Added
     Payment as GqlPayment,
-    CreatePaymentIntentData, // Added data type
+    CreatePaymentIntentData,
+    CreateSetupIntentData, // Added
   } from "../../generated/graphql-types.js";
   import { ContextValue } from "../../index.js";
   import { Payment } from "../entities/payment.entity.js";
-  import { CreatePaymentIntentInputDto } from "../dtos/create-payment-intent.dto.js"; // Updated DTO import
+  import { CreatePaymentIntentInputDto } from "../dtos/create-payment-intent.dto.js";
   import { AppError } from "../../common/errors/errors.js";
 
-  // --- Mapping Helpers --- (mapPaymentToGql unchanged)
-  const mapPaymentToGql = (payment: Payment): GqlPayment => ({
+  const mapPaymentToGql = (payment: Payment): GqlPayment => {
     ...payment,
     stripeId: payment.stripeId ?? undefined,
     createdAt: payment.createdAt.toISOString(),
     updatedAt: payment.updatedAt.toISOString(),
-  });
-  // --- End Mapping Helpers ---
+  };
 
   export const paymentResolver = {
     Mutation: {
+      createSetupIntent: async (
+        _parent: unknown,
+        _args: Record<string, never>,
+        { prisma, stripe }: ContextValue
+      ): Promise<CreateSetupIntentResponse> => {
+        const service = new PaymentService(prisma, stripe);
+        try {
+          const setupIntentData = await service.createSetupIntent();
+          const responseData: CreateSetupIntentData = {
+            setupIntentId: setupIntentData.setupIntentId,
+            clientSecret: setupIntentData.clientSecret,
+            customerId: setupIntentData.customerId,
+          };
+          // ... return success response ...
+        } catch (error) {
+          // ... return error response ...
+        }
+      },
       createPaymentIntent: async (
         _parent: unknown,
-        { input }: { input: CreatePaymentIntentInputDto },
+        { input }: { input: CreatePaymentIntentInputDto }, // Includes optional customerId
         { prisma, stripe }: ContextValue
       ): Promise<CreatePaymentIntentResponse> => {
         const service = new PaymentService(prisma, stripe);
         try {
+          // Service handles optional customerId in input
           const paymentIntentData = await service.createPaymentIntent(input);
-          // Map service response to GraphQL response structure
-          const responseData: CreatePaymentIntentData = {
-            paymentIntentId: paymentIntentData.paymentIntentId,
-            clientSecret: paymentIntentData.clientSecret,
-          };
-          return {
-            statusCode: 201,
-            success: true,
-            message: "Payment Intent created successfully",
-            data: responseData,
-          };
+          // ... return success response ...
         } catch (error) {
-          if (error instanceof AppError) {
-            return {
-              statusCode: error.statusCode,
-              success: false,
-              message: error.message,
-              data: null,
-            };
-          }
-          return {
-            statusCode: 500,
-            success: false,
-            message: "An unexpected error occurred creating payment intent",
-            data: null,
-          };
+          // ... return error response ...
         }
       },
       updatePaymentStatus: async (
@@ -1247,7 +1265,7 @@
   };
   ```
 
-- [x] Create `apps/backend/src/payment/services/payment.service.ts`: (Replaced `initiatePayment` with `createPaymentIntent`)
+- [x] Create `apps/backend/src/payment/services/payment.service.ts`: (Added `createSetupIntent`, updated `createPaymentIntent`)
 
   ```typescript
   import { PrismaClient } from "@packages/database";
@@ -1274,8 +1292,7 @@
       input: CreatePaymentIntentInputDto
     ): Promise<{ paymentIntentId: string; clientSecret: string }> {
       try {
-        const { amount, currency } = input;
-
+        const { amount, currency, customerId } = input; // Use customerId
         if (!this.stripe) {
           throw new InternalServerError("Payment provider not configured");
         }
@@ -1288,14 +1305,15 @@
           paymentIntent = await this.stripe.paymentIntents.create({
             amount: Math.round(amount * 100),
             currency: currency,
+            ...(customerId && { customer: customerId }), // Add customer if provided
           });
-        } catch (stripeError: unknown) {
+        } catch (stripeError) {
           throw new InternalServerError(
             "Failed to create payment intent with provider"
           );
         }
 
-        if (!paymentIntent || !paymentIntent.client_secret) {
+        if (!paymentIntent?.client_secret) {
           throw new InternalServerError(
             "Failed to get payment secret from provider"
           );
@@ -1315,6 +1333,65 @@
         }
         throw new InternalServerError(
           "Failed to process payment intent creation request"
+        );
+      }
+    }
+
+    async createSetupIntent(): Promise<{
+      setupIntentId: string;
+      clientSecret: string;
+      customerId: string;
+    }> {
+      try {
+        if (!this.stripe) {
+          throw new InternalServerError("Payment provider not configured");
+        }
+
+        // 1. Create Customer
+        let customer: Stripe.Customer;
+        try {
+          customer = await this.stripe.customers.create({
+            /* ... */
+          });
+        } catch (customerError) {
+          throw new InternalServerError(
+            "Failed to create customer for setup intent"
+          );
+        }
+
+        // 2. Create Setup Intent
+        let setupIntent: Stripe.SetupIntent;
+        try {
+          setupIntent = await this.stripe.setupIntents.create({
+            customer: customer.id,
+            usage: "on_session",
+          });
+        } catch (stripeError) {
+          throw new InternalServerError(
+            "Failed to create setup intent with provider"
+          );
+        }
+
+        if (!setupIntent?.client_secret) {
+          throw new InternalServerError(
+            "Failed to get setup secret from provider"
+          );
+        }
+
+        return {
+          setupIntentId: setupIntent.id,
+          clientSecret: setupIntent.client_secret,
+          customerId: customer.id,
+        };
+      } catch (error) {
+        if (
+          error instanceof BadRequestError ||
+          error instanceof InternalServerError
+        ) {
+          throw error;
+        }
+        throw new InternalServerError(
+          "Failed to process setup intent creation request"
         );
       }
     }
@@ -1355,80 +1432,29 @@
   }
   ```
 
-- [x] Create `apps/backend/src/payment/repositories/payment.repository.ts`: (Removed `create`, added `findByStripeId`, `findById`)
-
+- [x] Create `apps/backend/src/payment/repositories/payment.repository.ts`: (No changes needed for Setup Intent flow)
   ```typescript
-  import { PrismaClient, Payment as PrismaPayment } from "@packages/database";
-  import { Payment } from "../entities/payment.entity";
-
-  export class PaymentRepository {
-    private prisma: PrismaClient;
-
-    constructor(prisma: PrismaClient) {
-      this.prisma = prisma;
-    }
-
-    async findByStripeId(stripeId: string): Promise<Payment | null> {
-      return this.prisma.payment.findUnique({
-        where: { stripeId }, // stripeId is @unique in schema
-      });
-    }
-
-    async findById(id: string): Promise<Payment | null> {
-      return this.prisma.payment.findUnique({
-        where: { id },
-      });
-    }
-
-    async updateStatus(id: string, status: string): Promise<Payment | null> {
-      return this.prisma.payment.update({
-        where: { id },
-        data: { status },
-      });
-    }
-  }
+  // ... (repository unchanged) ...
   ```
 
 #### 6. Resolvers Integration
 
-- [x] Update `apps/backend/src/resolvers.ts`: (Updated Mutations list)
+- [x] Update `apps/backend/src/resolvers.ts`: (No structural changes needed, `paymentResolver` already included)
 
   ```typescript
-  import { menuResolver } from "./menu/resolvers/menu.resolver.js";
-  import { orderResolver } from "./order/resolvers/order.resolver.js";
   import { paymentResolver } from "./payment/resolvers/payment.resolver.js";
-  import { qrCodeResolver } from "./qr-code/qr-code.resolver.js";
-  import type { ContextValue } from "./index.js";
-  import type { Resolvers } from "./generated/graphql-types.js";
+  // ... other imports
 
   const resolvers: Resolvers<ContextValue> = {
     Query: {
-      healthCheck: async (
-        _parent: unknown,
-        _args: Record<string, never>,
-        context: ContextValue
-      ): Promise<{ status: string }> => {
-        try {
-          await context.prisma.healthCheck.create({
-            data: { status: "OK" },
-          });
-          return { status: "OK" };
-        } catch (error) {
-          console.error("Health check DB write failed:", error);
-          return { status: "Error connecting to DB" };
-        }
-      },
-      ...menuResolver.Query,
-      ...orderResolver.Query,
-      ...qrCodeResolver.Query,
+      /* ... */
     },
     Mutation: {
-      ...menuResolver.Mutation,
-      ...paymentResolver.Mutation,
-      ...orderResolver.Mutation,
+      // ... other mutations
+      ...paymentResolver.Mutation, // Includes createSetupIntent now
+      // ... other mutations
     },
   };
-
   export default resolvers;
   ```
 
