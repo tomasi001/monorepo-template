@@ -260,4 +260,117 @@
 - [x] Run GraphQL Code Generator: `yarn generate`.
 - [x] Verify generated files in `src/generated/graphql/` reflect the new mutations and queries.
 
+### B. Frontend GraphQL Client & Codegen
+
+- [x] Install necessary frontend dependencies: `graphql-request`, `@tanstack/react-query`, `graphql`, `@graphql-codegen/cli`, `@graphql-codegen/client-preset`.
+
+- [x] Set up GraphQL client using `graphql-request` in `apps/frontend/src/lib/react-query.ts`: (Updated path and snippet)
+
+  ```typescript
+  // apps/frontend/src/lib/react-query.ts
+  import { QueryClient } from "@tanstack/react-query";
+  import { GraphQLClient } from "graphql-request";
+  import { loadStripe } from "@stripe/stripe-js";
+
+  // Create a GraphQL client instance
+  // Use the full path from the frontend's perspective; Vite proxy might handle it if configured.
+  export const gqlClient = new GraphQLClient("http://localhost:4000/graphql");
+
+  // Create a react-query client instance
+  export const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 10, // 10 seconds
+        retry: 1,
+      },
+    },
+  });
+
+  // Replace with your actual Stripe publishable key
+  export const stripePromise = loadStripe(
+    "pk_test_51PEXAMPLEKEYEXAMPLEKEYEXAMPLEKEYEXAMPLEKEYEXAMPLE00ABCD1234"
+  );
+  ```
+
+- [x] Configure GraphQL Code Generator in `apps/frontend/codegen.ts`:
+
+  ```typescript
+  import type { CodegenConfig } from "@graphql-codegen/cli";
+
+  const config: CodegenConfig = {
+    overwrite: true,
+    // Use file path for schema generation (relative to frontend root)
+    schema: "../backend/src/schema.ts",
+    documents: "src/graphql/**/*.graphql", // Look for .graphql files
+    generates: {
+      "src/generated/graphql/": {
+        preset: "client", // Use client preset for TanStack Query hooks etc.
+        plugins: [],
+        config: {
+          useTypeImports: true,
+        },
+      },
+    },
+    require: ["ts-node/register"], // Needed to read backend's .ts schema
+  };
+  export default config;
+  ```
+
+- [x] Create GraphQL query/mutation files in `apps/frontend/src/graphql/`:
+
+  - Example: `menuById.graphql`, `createOrderFromPayment.graphql`, `createSetupIntent.graphql`, etc.
+  - Ensure queries request all necessary fields (id, name, items, etc.).
+  - Ensure mutations request relevant response data (id, status, etc.).
+
+  **Example: `apps/frontend/src/graphql/menuById.graphql`**
+
+  ```graphql
+  query MenuById($id: String!) {
+    menuById(id: $id) {
+      statusCode
+      success
+      message
+      data {
+        id
+        name
+        items {
+          id
+          name
+          description
+          price
+          available
+        }
+      }
+    }
+  }
+  ```
+
+  **Example: `apps/frontend/src/graphql/createOrderFromPayment.graphql`**
+
+  ```graphql
+  mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {
+    createOrderFromPayment(input: $input) {
+      statusCode
+      success
+      message
+      data {
+        id
+        total
+        status
+        items {
+          quantity
+          price
+          menuItem {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+  ```
+
+- [x] Run codegen: `yarn generate` (or `yarn workspace @apps/frontend generate`).
+- [x] Verify generated types/hooks in `apps/frontend/src/generated/graphql/`.
+
 [Next Section ->](reqs_IIC_frontend_logic.md)

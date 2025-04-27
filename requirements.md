@@ -72,7 +72,7 @@
 **Notes:**
 
 - Ensure backend is running (`apps/backend`, `yarn dev`) and seeded with test data (`test-qr-123`).
-- Replace `your_stripe_publishable_key` in `react-query.ts` with your Stripe publishable key.
-- All components use shadcn/ui `Toast` for success/error notifications.
+- Ensure `VITE_STRIPE_PUBLISHABLE_KEY` is set in `apps/frontend/.env`.
+- All components use shadcn/ui `sonner` (via `toast`) for success/error notifications.
 - TanStack Query handles loading/error states; empty data is shown in `MenuDisplay`.
-- Frontend integrates with backend GraphQL endpoints (`menu`, `createOrder`, `initiatePayment`, `updatePaymentStatus`, `updateOrderStatus`).
+- Frontend integrates with backend GraphQL endpoints (e.g., `menuById`, `createSetupIntent`, `createPaymentIntent`, `createOrderFromPayment`, `order`).

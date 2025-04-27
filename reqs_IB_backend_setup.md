@@ -39,8 +39,8 @@
     "dependencies": {
       "@apollo/server": "^4.0.0",
       "@packages/database": "*",
-      "@thoughtspot/graph-to-openapi": "latest",
-      "@graphql-tools/schema": "latest",
+      "@thoughtspot/graph-to-openapi": "^0.9.3",
+      "@graphql-tools/schema": "^10.0.23",
       "cors": "^2.8.5",
       "dotenv": "^16.0.0",
       "express": "^4.18.0",
@@ -56,6 +56,7 @@
       "@types/node": "^18.0.0",
       "@types/qrcode": "^1.5.5",
       "@types/stripe": "^8.0.0",
+      "@types/swagger-jsdoc": "^6.0.1",
       "@types/swagger-ui-express": "^4.1.3",
       "nodemon": "^3.0.0",
       "typescript": "^5.0.0",
@@ -65,6 +66,7 @@
       "rimraf": "^3.0.2",
       "@graphql-codegen/cli": "latest",
       "@graphql-codegen/typescript": "latest",
+      "@graphql-codegen/typescript-resolvers": "latest",
       "eslint-config-prettier": "latest",
       "globals": "latest",
       "typescript-eslint": "latest",
@@ -120,9 +122,10 @@
   const schema = makeExecutableSchema({ typeDefs, resolvers });
 
   const openapiInfo = {
-    title: "QR Menu API (Generated from GraphQL)",
+    title: "QR Menu API (Generated)",
     version: "1.0.0",
-    description: "API for QR-based menu and ordering system",
+    description:
+      "API for QR-based menu and ordering system (Generated from GraphQL schema)",
   };
 
   const { spec: swaggerSpec } = getOpenAPISpec({

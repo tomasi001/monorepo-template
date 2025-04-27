@@ -26,18 +26,19 @@
 
   const config: CodegenConfig = {
     overwrite: true,
-    schema: "./src/schema.ts", // Path to schema file
+    schema: "./src/schema.ts", // Point to your schema file
     generates: {
       "src/generated/graphql-types.ts": {
         plugins: ["typescript", "typescript-resolvers"],
         config: {
           useIndexSignature: true,
-          contextType: "../index.js#ContextValue", // Path uses .js extension now
+          contextType: "../index.js#ContextValue", // Updated path with .js extension
         },
       },
     },
-    require: ["ts-node/register"], // Needed for .ts schema
+    require: ["ts-node/register"], // Needed to read .ts schema file
   };
+
   export default config;
   ```
 

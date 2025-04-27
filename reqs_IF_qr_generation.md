@@ -20,8 +20,56 @@
 ### F. QR Code Generation Domain (`apps/backend`) - Added Functionality
 
 - [x] Create `apps/backend/src/qr-code/qr-code.service.ts`:
+
   - [x] Implement `generateQrCodeDataUrl` using `qrcode` library.
   - [x] Include basic error handling (throws generic `Error`).
+  - [x] Implement `generateQrCodeBuffer` using `qrcode` library.
+  - [x] Include basic error handling (throws generic `Error`).
+
+  ```typescript
+  import * as QRCode from "qrcode";
+
+  export class QrCodeService {
+    /**
+     * Generates a QR code as a data URL (base64 encoded PNG).
+     * @param text The text to encode in the QR code.
+     * @returns A promise that resolves with the data URL string.
+     */
+    async generateQrCodeDataUrl(text: string): Promise<string> {
+      try {
+        const options: QRCode.QRCodeToDataURLOptions = {
+          errorCorrectionLevel: "H",
+          type: "image/png",
+        };
+        const dataUrl = await QRCode.toDataURL(text, options);
+        return dataUrl;
+      } catch (err) {
+        console.error("Error generating QR code data URL:", err);
+        throw new Error("Failed to generate QR code data URL.");
+      }
+    }
+
+    /**
+     * Generates a QR code as a Buffer (raw image data).
+     * @param text The text to encode in the QR code.
+     * @returns A promise that resolves with the PNG image Buffer.
+     */
+    async generateQrCodeBuffer(text: string): Promise<Buffer> {
+      try {
+        const options: QRCode.QRCodeToBufferOptions = {
+          errorCorrectionLevel: "H",
+          type: "png",
+        };
+        const buffer: Buffer = await QRCode.toBuffer(text, options);
+        return buffer;
+      } catch (err) {
+        console.error("Error generating QR code buffer:", err);
+        throw new Error("Failed to generate QR code buffer.");
+      }
+    }
+  }
+  ```
+
 - [x] Create `apps/backend/src/qr-code/qr-code.resolver.ts`:
   - [x] Define `QrCodeResponse` interface.
   - [x] Implement `generateQrCode` query resolver using `QrCodeService` from context.

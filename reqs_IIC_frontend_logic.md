@@ -45,12 +45,13 @@
 
   // Use environment variable for Stripe publishable key
   const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+
   if (!stripePublishableKey) {
     console.error(
-      "Stripe publishable key (VITE_STRIPE_PUBLISHABLE_KEY) is not set in .env!"
+      "Stripe publishable key (VITE_STRIPE_PUBLISHABLE_KEY) is not set in .env! Payment functionality will be disabled."
     );
-    // Handle error (e.g., show message, disable payment)
   }
+
   // LoadStripe returns a promise, handle potential null key
   export const stripePromise = stripePublishableKey
     ? loadStripe(stripePublishableKey)
@@ -60,8 +61,9 @@
   stripePromise.then((stripe) => {
     if (!stripe) {
       console.error(
-        "Stripe failed to initialize, possibly due to a missing key."
+        "Stripe failed to initialize, possibly due to a missing or invalid key."
       );
+      // Consider showing a user-facing error message
     }
   });
   ```
@@ -70,47 +72,49 @@
 
 #### 2. Menu Display Component
 
-- [x] Create `src/components/MenuDisplay.tsx`: Handles fetching menu by ID, displaying items, managing quantities, calculating total, initiating payment intent creation, and rendering the Stripe form.
+- [x] Create `src/components/MenuDisplay.tsx`: Handles fetching menu by ID, displaying items, managing quantities, calculating total. Renders `StripePaymentForm` for card setup. Initiates payment intent creation, confirms card payment, and creates the order upon user confirmation.
 
   ```typescript
   import React, { useState, useMemo } from "react";
+  import { useLocation } from "wouter"; // Added for navigation
+  import { useStripe } from "@stripe/react-stripe-js"; // Added Stripe hook
   import { Button, Card, CardContent, Input } from "@packages/ui";
   import { useMutation, useQuery } from "@tanstack/react-query";
   import { toast } from "sonner";
   import {
-    Menu as GqlMenu, // Type from generated graphql
+    Menu as GqlMenu,
     MenuByIdDocument, MenuByIdQuery,
+    CreateSetupIntentDocument, CreateSetupIntentMutation, // Added SetupIntent
     CreatePaymentIntentDocument, CreatePaymentIntentMutation, CreatePaymentIntentMutationVariables,
     CreateOrderFromPaymentDocument, CreateOrderFromPaymentMutation, CreateOrderFromPaymentMutationVariables,
   } from "../generated/graphql/graphql";
   import { gqlClient } from "../lib/react-query";
   import { StripePaymentForm } from "./StripePaymentForm";
   // Import Receipt component if used
-  // import { Receipt } from "./Receipt";
+  // import { Receipt } from "./Receipt"; // Receipt is used in App.tsx route
 
-  // Local interface matching GqlMenu structure for internal use
-  interface Menu {
-    id: string;
-    name: string;
-    items: { /* MenuItem fields */ id: string; name: string; description?: string | null; price: number; available: boolean; }[];
-  }
+  // Local interface matching GqlMenu structure (Simplified)
+  interface Menu { /* ... */ }
+  interface MenuItem { /* ... */ }
 
   interface MenuDisplayProps {
     menuId: string;
-    onOrderPlaced: (orderId: string, total: number) => void; // Callback after successful order creation
+    onOrderPlaced: (orderId: string, total: number) => void;
   }
 
-  // Type guard for menu data validation (Helper)
   function isValidMenu(data: unknown): data is GqlMenu { /* ... implementation ... */ }
 
   export const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuId, onOrderPlaced }) => {
+    const stripe = useStripe();
+    const [, navigate] = useLocation();
     const [quantities, setQuantities] = useState<Record<string, number>>({});
-    const [isReviewingPayment, setIsReviewingPayment] = useState(false); // State to show payment section
-    const [clientSecret, setClientSecret] = useState<string | null>(null); // Stripe client secret
-    const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null); // Stripe payment intent ID
+    const [isReviewingPayment, setIsReviewingPayment] = useState(false);
+    const [savedPaymentMethodId, setSavedPaymentMethodId] = useState<string | null>(null);
+    const [customerId, setCustomerId] = useState<string | null>(null);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
     // Fetch Menu by ID using TanStack Query
-    const { data: menu, isLoading, error } = useQuery<MenuByIdQuery, Error, Menu | null>({
+    const { data: menuQueryResult, isLoading, error } = useQuery<MenuByIdQuery, Error, Menu | null>({
       queryKey: ["menuById", menuId],
       queryFn: () => gqlClient.request(MenuByIdDocument, { id: menuId }),
       enabled: !!menuId,
@@ -118,120 +122,143 @@
       staleTime: 5 * 60 * 1000,
     });
 
-    // Calculate total based on quantities and menu prices
-    const currentTotal = useMemo(() => {
-      if (!menu) return 0;
-      return menu.items.reduce((total, item) => total + (quantities[item.id] || 0) * item.price, 0);
-    }, [quantities, menu]);
+    const currentTotal = useMemo(() => { /* ... Calculation ... */ }, [quantities, menuQueryResult]);
 
-    // Mutation to create Stripe Payment Intent
-    const createPaymentIntentMutation = useMutation<
-      CreatePaymentIntentMutation, Error, CreatePaymentIntentMutationVariables
-    >({
+    // Mutation hooks
+    const createSetupIntentMutation = useMutation<CreateSetupIntentMutation, Error, Record<string, never>>({
+      mutationFn: () => gqlClient.request(CreateSetupIntentDocument, {}),
+    });
+    const createPaymentIntentMutation = useMutation<CreatePaymentIntentMutation, Error, CreatePaymentIntentMutationVariables>({
       mutationFn: (variables) => gqlClient.request(CreatePaymentIntentDocument, variables),
-      onSuccess: (data) => {
-        if (data.createPaymentIntent.success && data.createPaymentIntent.data) {
-          setClientSecret(data.createPaymentIntent.data.clientSecret);
-          setPaymentIntentId(data.createPaymentIntent.data.paymentIntentId);
-          // Now StripePaymentForm can be rendered
-          toast.success("Payment ready", { description: "Enter card details." });
-        } else {
-          toast.error("Payment Setup Failed", { description: data.createPaymentIntent.message || "Could not prepare payment." });
-        }
-      },
-      onError: (error) => { toast.error("Payment Setup Error", { description: error.message }); },
     });
-
-    // Mutation to create Order after successful Stripe payment (passed to StripePaymentForm)
-    const createOrderFromPaymentMutation = useMutation<
-      CreateOrderFromPaymentMutation, Error, CreateOrderFromPaymentMutationVariables
-    >({
+    const createOrderFromPaymentMutation = useMutation<CreateOrderFromPaymentMutation, Error, CreateOrderFromPaymentMutationVariables>({
       mutationFn: (variables) => gqlClient.request(CreateOrderFromPaymentDocument, variables),
-      // onSuccess/onError handled within StripePaymentForm after mutateAsync call
     });
 
-    // Handle quantity changes (invalidates payment intent if cart changes after initiation)
-    const handleQuantityChange = (itemId: string, value: number | string) => {
-      // ... logic to update quantities state ...
-      if (clientSecret) {
-        // Invalidate client secret if cart changes
-        setClientSecret(null);
-        setPaymentIntentId(null);
-        toast.info("Cart Updated", { description: "Total changed. Please confirm payment details again." });
+    const handleQuantityChange = (itemId: string, value: number | string) => { /* ... quantity update logic ... */ };
+
+    const handleReviewAndPay = () => { /* ... check items, setIsReviewingPayment(true) ... */ };
+
+    // Callback from StripePaymentForm after successful card setup
+    const handleCardSetupSuccess = (paymentMethodId: string, setupIntentCustomerId: string) => {
+      setSavedPaymentMethodId(paymentMethodId);
+      setCustomerId(setupIntentCustomerId);
+      toast.success("Card details confirmed and ready for payment.");
+    };
+
+    // Handles the final payment confirmation and order creation
+    const handlePayNow = async () => {
+      if (!stripe || !savedPaymentMethodId || !customerId || currentTotal <= 0) {
+        // Basic validation checks
+        toast.error("Payment Error", { description: "Cannot proceed with payment. Check details." });
+        return;
       }
-    };
 
-    // Move to payment review stage
-    const handleReviewAndPay = () => {
-      const items = Object.entries(quantities).filter(([_, q]) => q > 0).map(([id, q]) => ({ menuItemId: id, quantity: q }));
-      if (items.length === 0) { toast.error("No Items Selected"); return; }
-      setIsReviewingPayment(true);
-      // Initiate payment intent creation immediately or via a confirm button
-      createPaymentIntentMutation.mutate({ input: { amount: currentTotal, currency: "usd" } });
-    };
+      setIsProcessingPayment(true);
+      try {
+        // 1. Create Payment Intent
+        const piResult = await createPaymentIntentMutation.mutateAsync({ input: { amount: currentTotal, currency: "usd", customerId } });
+        if (!piResult.createPaymentIntent.success || !piResult.createPaymentIntent.data?.clientSecret) {
+          throw new Error(piResult.createPaymentIntent.message || "Failed to create payment intent.");
+        }
+        const paymentIntentClientSecret = piResult.createPaymentIntent.data.clientSecret;
 
-    // Called by StripePaymentForm on successful payment *and* order creation
-    const handleFinalPaymentSuccess = (createdOrderId: string, paidTotal: number) => {
+        // 2. Confirm Card Payment with Stripe
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(paymentIntentClientSecret, { payment_method: savedPaymentMethodId });
+        if (confirmError) throw new Error(confirmError.message || "Failed to confirm card payment.");
+        if (paymentIntent?.status !== "succeeded") throw new Error(`Payment not successful. Status: ${paymentIntent?.status}`);
+
+        // 3. Create Order on Backend
+        const orderResult = await createOrderFromPaymentMutation.mutateAsync({ input: { paymentIntentId: paymentIntent.id, menuId, items: Object.entries(quantities).filter(([, q]) => q > 0).map(([id, q]) => ({ menuItemId: id, quantity: q })) } });
+        if (!orderResult.createOrderFromPayment.success || !orderResult.createOrderFromPayment.data) {
+          throw new Error(orderResult.createOrderFromPayment.message || "Payment succeeded but failed to record order.");
+        }
+
+        // 4. Success!
         toast.success("Order Placed and Paid Successfully!");
-        // Reset state
         setQuantities({});
         setIsReviewingPayment(false);
-        setClientSecret(null);
-        setPaymentIntentId(null);
-        // Call the App level callback (e.g., to navigate home)
-        onOrderPlaced(createdOrderId, paidTotal);
+        setSavedPaymentMethodId(null);
+        setCustomerId(null);
+        // Call App level callback (e.g., navigate to receipt/home)
+        onOrderPlaced(orderResult.createOrderFromPayment.data.id, orderResult.createOrderFromPayment.data.total);
+
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "An unexpected error occurred during payment.";
+        toast.error("Payment Failed", { description: message });
+      } finally {
+        setIsProcessingPayment(false);
+      }
     };
 
     // --- Render Logic --- //
     if (isLoading) { return <p>Loading menu...</p>; }
     if (error) { return <p>Error loading menu: {error.message}</p>; }
-    if (!menu) { return <p>Menu not found or failed to load.</p>; }
+    if (!menuQueryResult) { return <p>Menu not found or failed to load.</p>; }
 
     const hasItemsInCart = Object.values(quantities).some((q) => q > 0);
 
     return (
       <>
-        <h2 className="text-2xl font-semibold mb-4 text-center">{menu.name}</h2>
+        <h2 className="text-2xl font-semibold mb-4 text-center">{menuQueryResult.name}</h2>
         <Card>
-          <CardContent>
+          <CardContent className="pt-6">
             {/* Display Menu Items and Quantity Inputs */}
-            {menu.items.map((item) => (
-                <div key={item.id} /* ... item display ... */ >
-                    {/* ... name, price, description ... */}
-                    {item.available ? (
-                        <Input type="number" min="0" /* ... quantity input props ... */ />
-                    ) : <p>Unavailable</p>}
+            {menuQueryResult.items.map((item) => (
+              <div key={item.id} className="flex justify-between items-center border-b py-3 last:border-b-0">
+                <div>
+                  <p className="font-medium">{item.name}</p>
+                  {item.description && <p className="text-sm text-gray-600">{item.description}</p>}
+                  <p className="text-sm">${item.price.toFixed(2)}</p>
                 </div>
+                {item.available ? (
+                  <Input
+                    type="number"
+                    min="0"
+                    value={quantities[item.id] || "0"}
+                    onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                    className="w-20 text-center"
+                    aria-label={`Quantity for ${item.name}`}
+                  />
+                ) : (
+                  <p className="text-sm text-red-500 italic">Unavailable</p>
+                )}
+              </div>
             ))}
 
             {/* Total Display */}
             <div className="mt-4 text-lg font-semibold text-right">
-                Total: ${currentTotal.toFixed(2)}
+              Total: ${currentTotal.toFixed(2)}
             </div>
 
-            {/* Show Review/Pay Button OR Payment Form */}
+            {/* Show Review/Pay Button OR Payment Section */}
             {!isReviewingPayment ? (
-              <Button onClick={handleReviewAndPay} disabled={!hasItemsInCart} className="mt-4 w-full">
-                Review & Pay
+              <Button onClick={handleReviewAndPay} disabled={!hasItemsInCart || isLoading} className="mt-4 w-full">
+                {isLoading ? "Loading..." : "Review & Pay"}
               </Button>
             ) : (
-              <div className="mt-6">
-                <h3 className="text-xl font-semibold mb-3">Payment Details</h3>
-                {/* Show loading/error for payment intent creation */}
-                {createPaymentIntentMutation.isPending && <p>Preparing payment...</p>}
-                {createPaymentIntentMutation.isError && <p>Error preparing payment.</p>}
+              <div className="mt-6 border-t pt-4">
+                <h3 className="text-xl font-semibold mb-3 text-center">Confirm Payment</h3>
 
-                {/* Render Stripe form only when clientSecret is available */}
-                {clientSecret && paymentIntentId && (
-                  <StripePaymentForm
-                    clientSecret={clientSecret}
-                    paymentIntentId={paymentIntentId} // Pass payment intent ID
-                    menuId={menu.id}
-                    items={Object.entries(quantities).filter(([_, q]) => q > 0).map(([id, q]) => ({ menuItemId: id, quantity: q }))}
-                    onSuccess={handleFinalPaymentSuccess} // Pass the final success handler
-                    createOrderFromPaymentMutation={createOrderFromPaymentMutation} // Pass the mutation hook
+                {/* Render Stripe form for card setup */}
+                {!savedPaymentMethodId && (
+                   <StripePaymentForm
+                    onSetupSuccess={handleCardSetupSuccess}
+                    createSetupIntentMutation={createSetupIntentMutation}
                   />
                 )}
+
+                {/* Show Pay Now button only after card is setup */}
+                {savedPaymentMethodId && (
+                  <Button
+                    onClick={handlePayNow}
+                    disabled={isProcessingPayment || createPaymentIntentMutation.isPending || createOrderFromPaymentMutation.isPending}
+                    className="mt-4 w-full"
+                  >
+                    {isProcessingPayment ? "Processing Payment..." : `Pay $${currentTotal.toFixed(2)} Now`}
+                  </Button>
+                )}
+
                 {/* Button to go back from payment review */}
                 <Button variant="outline" onClick={() => setIsReviewingPayment(false)} className="mt-2 w-full">
                   Back to Menu
@@ -247,7 +274,7 @@
 
 #### 3. Stripe Payment Form Component
 
-- [x] Create `src/components/StripePaymentForm.tsx`: Handles Stripe `CardElement`, confirming payment with Stripe, and calling the `createOrderFromPayment` mutation upon successful card confirmation.
+- [x] Create `src/components/StripePaymentForm.tsx`: Handles Stripe `CardElement` and confirming card _setup_ using `createSetupIntent` mutation and `confirmCardSetup`.
 
   ```typescript
   import { Button } from "@packages/ui";
@@ -258,106 +285,87 @@
   import React, { useState } from "react";
   import { toast } from "sonner";
   import {
-    CreateOrderFromPaymentMutation, CreateOrderFromPaymentMutationVariables,
-    CreateOrderFromPaymentMutationResult // Type for the result data
+    CreateSetupIntentMutation // Expecting the SetupIntent mutation hook
   } from "../generated/graphql/graphql";
   import { stripePromise } from "../lib/react-query";
 
-  // Define Item structure matching expected input
-  interface OrderItemInput { menuItemId: string; quantity: number; }
-
   interface StripePaymentFormProps {
-    clientSecret: string;
-    paymentIntentId: string; // Stripe Payment Intent ID
-    menuId: string;
-    items: OrderItemInput[];
-    onSuccess: (orderId: string, total: number) => void; // Callback expects order details
-    createOrderFromPaymentMutation: UseMutationResult<
-      // Define the expected types for the mutation hook
-      CreateOrderFromPaymentMutation,
-      Error, // Default error type
-      CreateOrderFromPaymentMutationVariables, // Variables type
-      unknown // Context type
+    // Callback with paymentMethodId and customerId on successful setup
+    onSetupSuccess: (paymentMethodId: string, customerId: string) => void;
+    createSetupIntentMutation: UseMutationResult<
+      CreateSetupIntentMutation,
+      Error,
+      Record<string, never>, // No variables needed for createSetupIntent
+      unknown
     >;
   }
 
   // Internal component using Stripe hooks
-  const FormContent: React.FC<StripePaymentFormProps> = ({ /* props */ clientSecret, paymentIntentId, menuId, items, onSuccess, createOrderFromPaymentMutation }) => {
+  const FormContent: React.FC<StripePaymentFormProps> = ({ onSetupSuccess, createSetupIntentMutation }) => {
     const stripe = useStripe();
     const elements = useElements();
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [isProcessingSetup, setIsProcessingSetup] = useState(false);
     const [cardError, setCardError] = useState<string | null>(null);
+    const [showCardForm, setShowCardForm] = useState(true);
 
-    const handlePay = async (event: React.FormEvent) => {
+    const handleSetupConfirm = async (event: React.FormEvent) => {
       event.preventDefault();
       setCardError(null);
       if (!stripe || !elements) { toast.error("Stripe not loaded"); return; }
       const cardElement = elements.getElement(CardElement);
       if (!cardElement) { toast.error("Card element not found"); return; }
 
-      setIsProcessing(true);
-
-      // 1. Confirm card payment with Stripe
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card: cardElement },
-      });
-
-      if (stripeError) {
-        setCardError(stripeError.message ?? "Unknown payment error");
-        toast.error("Payment Failed", { description: stripeError.message });
-        setIsProcessing(false);
-        return;
-      }
-
-      // 2. If Stripe confirms success, create order on backend
-      if (paymentIntent?.status === "succeeded") {
-        try {
-          const result = await createOrderFromPaymentMutation.mutateAsync({
-            input: {
-              paymentIntentId: paymentIntent.id, // Use confirmed PI ID
-              menuId: menuId,
-              items: items,
-            },
-          });
-
-          // Check backend response
-          if (result.createOrderFromPayment.success && result.createOrderFromPayment.data) {
-            toast.success("Payment Successful & Order Created!");
-            // Call success callback with created order details
-            onSuccess(result.createOrderFromPayment.data.id, result.createOrderFromPayment.data.total);
-          } else {
-            // Handle backend order creation failure
-            const errorMsg = result.createOrderFromPayment.message || "Payment succeeded but failed to record order.";
-            toast.error("Order Creation Failed", { description: errorMsg });
-            setCardError(errorMsg);
-          }
-        } catch (orderError: unknown) {
-          // Handle network or unexpected errors during backend call
-          const message = orderError instanceof Error ? orderError.message : "Unexpected order creation error.";
-          toast.error("Order Creation Error", { description: message });
-          setCardError(message);
-        } finally {
-          setIsProcessing(false);
+      setIsProcessingSetup(true);
+      try {
+        // 1. Create Setup Intent on backend
+        const setupIntentResult = await createSetupIntentMutation.mutateAsync({});
+        if (!setupIntentResult.createSetupIntent.success || !setupIntentResult.createSetupIntent.data) {
+          throw new Error(setupIntentResult.createSetupIntent.message || "Could not create setup intent.");
         }
-      } else {
-        // Handle other Stripe statuses (e.g., requires_action)
-        toast.info("Payment Status", { description: `Payment status: ${paymentIntent?.status}` });
-        setIsProcessing(false);
+        const setupIntentClientSecret = setupIntentResult.createSetupIntent.data.clientSecret;
+        const customerId = setupIntentResult.createSetupIntent.data.customerId;
+
+        // 2. Confirm Card Setup with Stripe
+        const { error: stripeSetupError, setupIntent } = await stripe.confirmCardSetup(setupIntentClientSecret, { payment_method: { card: cardElement } });
+
+        if (stripeSetupError) throw stripeSetupError;
+
+        // 3. Handle Success
+        if (setupIntent?.status === "succeeded") {
+          if (setupIntent.payment_method && customerId) {
+            toast.success("Card Details Confirmed");
+            setShowCardForm(false); // Hide form
+            onSetupSuccess(setupIntent.payment_method as string, customerId);
+          } else {
+            throw new Error("Setup succeeded but payment method or customer ID missing.");
+          }
+        } else {
+          throw new Error(`Card setup failed. Status: ${setupIntent?.status}`);
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "An unexpected card setup error occurred.";
+        toast.error("Card Confirmation Failed", { description: message });
+        setCardError(message);
+      } finally {
+        setIsProcessingSetup(false);
       }
     };
 
     // --- Render Logic --- //
     return (
-      <form onSubmit={handlePay} className="space-y-4">
-        <CardElement options={{ /* style options */ }} onChange={() => setCardError(null)} />
-        {cardError && <p className="text-red-600 text-sm mt-1">{cardError}</p>}
-        <Button
-          type="submit"
-          disabled={isProcessing || !stripe || !elements || createOrderFromPaymentMutation.isPending}
-          className="w-full"
-        >
-          {isProcessing || createOrderFromPaymentMutation.isPending ? "Processing..." : "Pay Now"}
-        </Button>
+      <form onSubmit={handleSetupConfirm} className="flex flex-col text-left mt-4 border p-4 rounded">
+        {showCardForm ? (
+          <>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Enter Card Details</label>
+            <CardElement options={{ style: { base: { fontSize: "16px" } } }} onChange={() => setCardError(null)} />
+            {cardError && <p className="text-red-600 text-sm mt-1">{cardError}</p>}
+            <Button type="submit" disabled={isProcessingSetup || !stripe || !elements} className="w-full mt-4">
+              {isProcessingSetup ? "Processing..." : "Confirm Card Details"}
+            </Button>
+          </>
+        ) : (
+          <p className="text-green-600 text-center font-medium">✓ Card details confirmed.</p>
+        )}
       </form>
     );
   };
@@ -372,34 +380,30 @@
   };
   ```
 
-- [x] Remove `src/components/PaymentDialog.tsx` (Functionality integrated into `MenuDisplay` and `StripePaymentForm`).
-
 #### 4. Main App Component
 
-- [x] Update `src/App.tsx` to handle routing using `wouter` and initial QR scanning. The core menu display and payment logic is now delegated to `MenuDisplay`.
+- [x] Update `src/App.tsx` to handle routing using `wouter`, initial QR scanning, wrap routes with Stripe `<Elements>`, and include route for `<OrderReceipt>`.
 
   ```typescript
   import { QRScanner } from "@packages/ui";
   import { QueryClientProvider } from "@tanstack/react-query";
   import { Toaster, toast } from "sonner";
-  import { Link, Route, Router, Switch, useLocation, useRoute } from "wouter"; // Import wouter hooks
+  import { Link, Route, Router, Switch, useRoute } from "wouter";
   import "./App.css";
   import { MenuDisplay } from "./components/MenuDisplay";
-  import { queryClient } from "./lib/react-query";
+  import { OrderReceipt } from "./components/OrderReceipt"; // Import Receipt component
+  import { queryClient, stripePromise } from "./lib/react-query";
+  import { Elements } from "@stripe/react-stripe-js"; // Import Elements
 
   function App() {
-    const [, navigate] = useLocation(); // Hook for navigation
-
     // Handle QR Scan: Parse URL and navigate
     const handleScan = (code: string) => {
       try {
         const url = new URL(code);
-        // Basic check for origin and path prefix
         if (url.origin === window.location.origin && url.pathname.startsWith("/menu/")) {
           const menuId = url.pathname.split("/").pop();
           if (menuId) {
-            // navigate(`/menu/${menuId}`); // Use wouter navigation (commented out - uses href)
-            window.location.href = `/menu/${menuId}`; // Actual implementation uses href
+            window.location.href = `/menu/${menuId}`;
             toast.success("QR Code Scanned", { description: `Navigating to Menu ID: ${menuId}` });
             return;
           }
@@ -410,16 +414,12 @@
       }
     };
 
-    const handleScanError = (message: string) => {
-      toast.error("QR Scan Error", { description: message });
-    };
+    const handleScanError = (message: string) => { /* ... toast error ... */ };
 
     // Callback after successful payment *and* order creation
-    const handleOrderCycleComplete = (orderId: string, total: number) => {
-      // Navigate home or to a success/receipt page
-      toast.success(`Order ${orderId} Complete! Total: $${total.toFixed(2)}`);
-      // navigate("/"); // Navigate back to scanner (commented out - uses href)
-      window.location.href = "/"; // Actual implementation uses href
+    const handleOrderCycleComplete = (orderId: string) => {
+      // Navigate to receipt page
+      window.location.href = `/order/success/${orderId}`;
     };
 
     // Component rendered for the /menu/:menuId route
@@ -445,15 +445,22 @@
         <Router>
           <div className="max-w-2xl mx-auto p-4">
             <h1 className="text-3xl font-bold mb-6 text-center">QR Menu Scanner</h1>
-            <Switch>
-              <Route path="/">
-                <QRScanner onScan={handleScan} onError={handleScanError} />
-              </Route>
-              <Route path="/menu/:menuId">
-                <MenuPage />
-              </Route>
-              <Route><p>404 - Page Not Found</p></Route>
-            </Switch>
+            {/* Wrap Switch with Elements provider */}
+            <Elements stripe={stripePromise}>
+              <Switch>
+                <Route path="/">
+                  <QRScanner onScan={handleScan} onError={handleScanError} />
+                </Route>
+                <Route path="/menu/:menuId">
+                  <MenuPage />
+                </Route>
+                {/* Added route for OrderReceipt */}
+                <Route path="/order/success/:orderId">
+                  <OrderReceipt />
+                </Route>
+                <Route><p>404 - Page Not Found</p></Route>
+              </Switch>
+            </Elements>
             <Toaster richColors position="top-right" />
           </div>
         </Router>

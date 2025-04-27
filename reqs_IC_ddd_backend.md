@@ -570,7 +570,7 @@
   }
   ```
 
-- [x] Create `apps/backend/src/menu/repositories/menu.repository.ts`: (Added `findMenuWithItems`, updated `findById` name, removed `findById`'s log lines as they are now in the service)
+- [x] Create `apps/backend/src/menu/repositories/menu.repository.ts`: (Added `findItemsByIds`, updated `findMenuWithItems` description/include)
 
   ```typescript
   import {
@@ -578,8 +578,9 @@
     Menu as PrismaMenu,
     MenuItem as PrismaMenuItem,
   } from "@packages/database";
-  import { Menu, MenuItem } from "../entities/menu.entity";
+  import { Menu, MenuItem } from "../entities/menu.entity.js";
 
+  // Helper to map Prisma MenuItem to Entity MenuItem
   const mapPrismaMenuItemToEntity = (prismaItem: PrismaMenuItem): MenuItem => ({
     id: prismaItem.id,
     name: prismaItem.name,
@@ -590,6 +591,7 @@
     updatedAt: prismaItem.updatedAt,
   });
 
+  // Helper to map Prisma Menu (with items) to Entity Menu
   const mapPrismaMenuToEntity = (
     prismaMenu: PrismaMenu & { items?: PrismaMenuItem[] }
   ): Menu => ({
@@ -616,26 +618,33 @@
       });
       if (prismaMenu && prismaMenu.qrCodeDataUrl === null) {
         console.warn(
-          `[MenuRepository] Menu ${prismaMenu.id} found but qrCodeDataUrl is null.`
+          `[MenuRepository] Menu ${prismaMenu.id} found but qrCodeDataUrl is null despite schema requirement.`
         );
         return null;
       }
       return prismaMenu ? mapPrismaMenuToEntity(prismaMenu) : null;
     }
 
+    // Fetches menu with ALL items (available or not)
     async findMenuWithItems(id: string): Promise<Menu | null> {
+      console.log(
+        `[MenuRepository] Attempting to find menu with ALL items by ID: ${id}`
+      );
       try {
         const prismaMenu = await this.prisma.menu.findUnique({
           where: { id },
-          include: { items: { where: { available: true } } },
+          include: { items: true },
         });
-        if (prismaMenu && prismaMenu.qrCodeDataUrl === null) {
-          console.warn(
-            `[MenuRepository] Menu ${prismaMenu.id} found but qrCodeDataUrl is null.`
-          );
-          return null;
-        }
-        return prismaMenu ? mapPrismaMenuToEntity(prismaMenu) : null;
+        console.log(
+          `[MenuRepository] Found menu by ID:`,
+          prismaMenu ? `Menu ID ${prismaMenu.id}` : "null"
+        );
+        const result = prismaMenu ? mapPrismaMenuToEntity(prismaMenu) : null;
+        console.log(
+          `[MenuRepository] Mapped menu by ID:`,
+          result ? `Menu ID ${result.id}` : "null"
+        );
+        return result;
       } catch (error) {
         console.error(
           `[MenuRepository] Error finding menu by ID ${id}:`,
@@ -643,6 +652,14 @@
         );
         throw error;
       }
+    }
+
+    // Added method not in original markdown
+    async findItemsByIds(ids: string[]): Promise<MenuItem[]> {
+      const prismaItems = await this.prisma.menuItem.findMany({
+        where: { id: { in: ids } },
+      });
+      return prismaItems.map(mapPrismaMenuItemToEntity);
     }
 
     async create(data: { name: string; qrCode: string }): Promise<Menu> {
@@ -1100,7 +1117,7 @@
   }
   ```
 
-- [x] Create `apps/backend/src/order/repositories/order.repository.ts`: (Method signatures match service calls, includes remain)
+- [x] Create `apps/backend/src/order/repositories/order.repository.ts`: (Added `create` method to snippet)
 
   ```typescript
   import {
@@ -1108,7 +1125,7 @@
     Order as PrismaOrder,
     OrderStatus,
   } from "@packages/database";
-  import { Order } from "../entities/order.entity";
+  import { Order } from "../entities/order.entity.js";
 
   export class OrderRepository {
     private prisma: PrismaClient;
@@ -1124,7 +1141,29 @@
       });
     }
 
-    async updateStatus(id: string, status: OrderStatus): Promise<Order | null> {
+    // Added method not in original markdown
+    async create(data: {
+      menuId: string;
+      total: number;
+      items: { menuItemId: string; quantity: number; price: number }[];
+    }): Promise<Order> {
+      return this.prisma.order.create({
+        data: {
+          menuId: data.menuId,
+          total: data.total,
+          items: {
+            create: data.items.map((item) => ({
+              menuItemId: item.menuItemId,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          },
+        },
+        include: { items: { include: { menuItem: true } }, payment: true },
+      });
+    }
+
+    async updateStatus(id: string, status: string): Promise<Order | null> {
       return this.prisma.order.update({
         where: { id },
         data: { status },
@@ -1170,29 +1209,30 @@
   }
   ```
 
-- [x] Create `apps/backend/src/payment/resolvers/payment.resolver.ts`: (Added `createSetupIntent`, updated imports)
+- [x] Create `apps/backend/src/payment/resolvers/payment.resolver.ts`: (Updated imports, filled in resolver logic, corrected mapper)
 
   ```typescript
   import { PaymentService } from "../services/payment.service.js";
   import {
     PaymentResponse,
     CreatePaymentIntentResponse,
-    CreateSetupIntentResponse, // Added
+    CreateSetupIntentResponse,
     Payment as GqlPayment,
     CreatePaymentIntentData,
-    CreateSetupIntentData, // Added
+    CreateSetupIntentData,
   } from "../../generated/graphql-types.js";
   import { ContextValue } from "../../index.js";
   import { Payment } from "../entities/payment.entity.js";
   import { CreatePaymentIntentInputDto } from "../dtos/create-payment-intent.dto.js";
   import { AppError } from "../../common/errors/errors.js";
 
-  const mapPaymentToGql = (payment: Payment): GqlPayment => {
+  // Helper to map entity dates/nulls to GraphQL strings/types
+  const mapPaymentToGql = (payment: Payment): GqlPayment => ({
     ...payment,
     stripeId: payment.stripeId ?? undefined,
     createdAt: payment.createdAt.toISOString(),
     updatedAt: payment.updatedAt.toISOString(),
-  };
+  });
 
   export const paymentResolver = {
     Mutation: {
@@ -1209,9 +1249,29 @@
             clientSecret: setupIntentData.clientSecret,
             customerId: setupIntentData.customerId,
           };
-          // ... return success response ...
+          // Return success response
+          return {
+            statusCode: 201,
+            success: true,
+            message: "Setup Intent created successfully",
+            data: responseData,
+          };
         } catch (error) {
-          // ... return error response ...
+          // Return error response
+          if (error instanceof AppError) {
+            return {
+              statusCode: error.statusCode,
+              success: false,
+              message: error.message,
+              data: null,
+            };
+          }
+          return {
+            statusCode: 500,
+            success: false,
+            message: "An unexpected error occurred creating setup intent",
+            data: null,
+          };
         }
       },
       createPaymentIntent: async (
@@ -1223,9 +1283,33 @@
         try {
           // Service handles optional customerId in input
           const paymentIntentData = await service.createPaymentIntent(input);
-          // ... return success response ...
+          const responseData: CreatePaymentIntentData = {
+            paymentIntentId: paymentIntentData.paymentIntentId,
+            clientSecret: paymentIntentData.clientSecret,
+          };
+          // Return success response
+          return {
+            statusCode: 201,
+            success: true,
+            message: "Payment Intent created successfully",
+            data: responseData,
+          };
         } catch (error) {
-          // ... return error response ...
+          // Return error response
+          if (error instanceof AppError) {
+            return {
+              statusCode: error.statusCode,
+              success: false,
+              message: error.message,
+              data: null,
+            };
+          }
+          return {
+            statusCode: 500,
+            success: false,
+            message: "An unexpected error occurred creating payment intent",
+            data: null,
+          };
         }
       },
       updatePaymentStatus: async (
@@ -1265,194 +1349,84 @@
   };
   ```
 
-- [x] Create `apps/backend/src/payment/services/payment.service.ts`: (Added `createSetupIntent`, updated `createPaymentIntent`)
+- [x] Create `apps/backend/src/payment/repositories/payment.repository.ts`: (Show full code instead of 'unchanged' comment)
 
   ```typescript
   import { PrismaClient } from "@packages/database";
   import { Payment } from "../entities/payment.entity.js";
-  import { PaymentRepository } from "../repositories/payment.repository.js";
-  import Stripe from "stripe";
-  import {
-    NotFoundError,
-    BadRequestError,
-    InternalServerError,
-  } from "../../common/errors/errors.js";
-  import { CreatePaymentIntentInputDto } from "../dtos/create-payment-intent.dto.js";
 
-  export class PaymentService {
-    private paymentRepository: PaymentRepository;
-    private stripe: Stripe | null;
+  export class PaymentRepository {
+    private prisma: PrismaClient;
 
-    constructor(prisma: PrismaClient, stripe: Stripe | null) {
-      this.paymentRepository = new PaymentRepository(prisma);
-      this.stripe = stripe;
+    constructor(prisma: PrismaClient) {
+      this.prisma = prisma;
     }
 
-    async createPaymentIntent(
-      input: CreatePaymentIntentInputDto
-    ): Promise<{ paymentIntentId: string; clientSecret: string }> {
-      try {
-        const { amount, currency, customerId } = input; // Use customerId
-        if (!this.stripe) {
-          throw new InternalServerError("Payment provider not configured");
-        }
-        if (amount <= 0) {
-          throw new BadRequestError("Payment amount must be positive.");
-        }
-
-        let paymentIntent: Stripe.PaymentIntent;
-        try {
-          paymentIntent = await this.stripe.paymentIntents.create({
-            amount: Math.round(amount * 100),
-            currency: currency,
-            ...(customerId && { customer: customerId }), // Add customer if provided
-          });
-        } catch (stripeError) {
-          throw new InternalServerError(
-            "Failed to create payment intent with provider"
-          );
-        }
-
-        if (!paymentIntent?.client_secret) {
-          throw new InternalServerError(
-            "Failed to get payment secret from provider"
-          );
-        }
-
-        console.log(`Created PaymentIntent: ${paymentIntent.id}`);
-        return {
-          paymentIntentId: paymentIntent.id,
-          clientSecret: paymentIntent.client_secret,
-        };
-      } catch (error) {
-        if (
-          error instanceof BadRequestError ||
-          error instanceof InternalServerError
-        ) {
-          throw error;
-        }
-        throw new InternalServerError(
-          "Failed to process payment intent creation request"
-        );
-      }
+    // Method exists in code, but might not be directly used by current services
+    async create(data: {
+      orderId: string;
+      amount: number;
+      status: string;
+      stripeId: string; // Assuming stripeId is always provided on creation here
+    }): Promise<Payment> {
+      return this.prisma.payment.create({
+        data,
+      });
     }
 
-    async createSetupIntent(): Promise<{
-      setupIntentId: string;
-      clientSecret: string;
-      customerId: string;
-    }> {
-      try {
-        if (!this.stripe) {
-          throw new InternalServerError("Payment provider not configured");
-        }
-
-        // 1. Create Customer
-        let customer: Stripe.Customer;
-        try {
-          customer = await this.stripe.customers.create({
-            /* ... */
-          });
-        } catch (customerError) {
-          throw new InternalServerError(
-            "Failed to create customer for setup intent"
-          );
-        }
-
-        // 2. Create Setup Intent
-        let setupIntent: Stripe.SetupIntent;
-        try {
-          setupIntent = await this.stripe.setupIntents.create({
-            customer: customer.id,
-            usage: "on_session",
-          });
-        } catch (stripeError) {
-          throw new InternalServerError(
-            "Failed to create setup intent with provider"
-          );
-        }
-
-        if (!setupIntent?.client_secret) {
-          throw new InternalServerError(
-            "Failed to get setup secret from provider"
-          );
-        }
-
-        return {
-          setupIntentId: setupIntent.id,
-          clientSecret: setupIntent.client_secret,
-          customerId: customer.id,
-        };
-      } catch (error) {
-        if (
-          error instanceof BadRequestError ||
-          error instanceof InternalServerError
-        ) {
-          throw error;
-        }
-        throw new InternalServerError(
-          "Failed to process setup intent creation request"
-        );
-      }
+    async findById(id: string): Promise<Payment | null> {
+      return this.prisma.payment.findUnique({
+        where: { id },
+      });
     }
 
-    async updatePaymentStatus(id: string, status: string): Promise<Payment> {
-      try {
-        const validStatuses = ["PENDING", "COMPLETED", "FAILED"];
-        if (!validStatuses.includes(status)) {
-          throw new BadRequestError("Invalid payment status");
-        }
+    async findByOrderId(orderId: string): Promise<Payment | null> {
+      return this.prisma.payment.findUnique({
+        where: { orderId },
+      });
+    }
 
-        const payment = await this.paymentRepository.findById(id);
-        if (!payment) {
-          throw new NotFoundError("Payment not found");
-        }
+    async findByStripeId(stripeId: string): Promise<Payment | null> {
+      return this.prisma.payment.findUnique({
+        where: { stripeId },
+      });
+    }
 
-        const updatedPayment = await this.paymentRepository.updateStatus(
-          id,
-          status
-        );
-        if (!updatedPayment) {
-          throw new InternalServerError(
-            "Failed to update payment status after finding payment."
-          );
-        }
-
-        return updatedPayment;
-      } catch (error) {
-        if (
-          error instanceof BadRequestError ||
-          error instanceof NotFoundError
-        ) {
-          throw error;
-        }
-        throw new InternalServerError("Failed to update payment status");
-      }
+    async updateStatus(id: string, status: string): Promise<Payment | null> {
+      return this.prisma.payment.update({
+        where: { id },
+        data: { status },
+      });
     }
   }
   ```
 
-- [x] Create `apps/backend/src/payment/repositories/payment.repository.ts`: (No changes needed for Setup Intent flow)
-  ```typescript
-  // ... (repository unchanged) ...
-  ```
-
 #### 6. Resolvers Integration
 
-- [x] Update `apps/backend/src/resolvers.ts`: (No structural changes needed, `paymentResolver` already included)
+- [x] Update `apps/backend/src/resolvers.ts`: (Add `qrCodeResolver.Query`)
 
   ```typescript
+  import { menuResolver } from "./menu/resolvers/menu.resolver.js";
+  import { orderResolver } from "./order/resolvers/order.resolver.js";
   import { paymentResolver } from "./payment/resolvers/payment.resolver.js";
-  // ... other imports
+  import { qrCodeResolver } from "./qr-code/qr-code.resolver.js"; // Added import
+  import type { Resolvers } from "./generated/graphql-types.js";
+  import { ContextValue } from "./index.js";
 
   const resolvers: Resolvers<ContextValue> = {
     Query: {
-      /* ... */
+      healthCheck: async (/* ... health check implementation ... */) => {
+        /* ... */
+      },
+      ...menuResolver.Query,
+      ...orderResolver.Query,
+      ...qrCodeResolver.Query, // Added QR code query resolver
     },
     Mutation: {
-      // ... other mutations
+      ...menuResolver.Mutation,
       ...paymentResolver.Mutation, // Includes createSetupIntent now
-      // ... other mutations
+      ...orderResolver.Mutation,
+      // Note: updatePaymentStatus and updateOrderStatus are part of their respective domain resolvers
     },
   };
   export default resolvers;
