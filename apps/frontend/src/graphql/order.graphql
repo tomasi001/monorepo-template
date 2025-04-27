@@ -10,6 +10,7 @@ query Order($id: String!) {
       items {
         menuItem {
           name
+          price
         }
         quantity
       }

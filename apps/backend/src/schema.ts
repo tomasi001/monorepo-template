@@ -54,6 +54,8 @@ const typeDefs = gql`
   type Mutation {
     createMenu(input: CreateMenuInput!): MenuResponse!
       @rest(path: "/menu", method: "POST", tag: "Menu")
+    createSetupIntent: CreateSetupIntentResponse!
+      @rest(path: "/payment/setup-intent", method: "POST", tag: "Payment")
     createPaymentIntent(
       input: CreatePaymentIntentInput!
     ): CreatePaymentIntentResponse!
@@ -166,6 +168,19 @@ const typeDefs = gql`
     clientSecret: String!
   }
 
+  type CreateSetupIntentResponse {
+    statusCode: Int!
+    success: Boolean!
+    message: String
+    data: CreateSetupIntentData
+  }
+
+  type CreateSetupIntentData {
+    setupIntentId: String!
+    clientSecret: String!
+    customerId: String!
+  }
+
   input CreateMenuInput {
     name: String!
     qrCode: String!
@@ -179,6 +194,7 @@ const typeDefs = gql`
   input CreatePaymentIntentInput {
     amount: Float!
     currency: String!
+    customerId: String
   }
 
   input CreateOrderFromPaymentInput {

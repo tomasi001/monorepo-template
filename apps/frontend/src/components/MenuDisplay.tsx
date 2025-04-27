@@ -1,21 +1,25 @@
-import React, { useState, useMemo } from "react";
 import { Button, Card, CardContent, Input } from "@packages/ui";
+import { useStripe } from "@stripe/react-stripe-js";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 import {
-  Menu as GqlMenu,
-  MenuByIdDocument,
-  MenuByIdQuery,
-  CreatePaymentIntentDocument,
-  CreatePaymentIntentMutation,
-  CreatePaymentIntentMutationVariables,
   CreateOrderFromPaymentDocument,
   CreateOrderFromPaymentMutation,
   CreateOrderFromPaymentMutationVariables,
+  CreatePaymentIntentDocument,
+  CreatePaymentIntentMutation,
+  CreatePaymentIntentMutationVariables,
+  CreateSetupIntentDocument,
+  CreateSetupIntentMutation,
+  Menu as GqlMenu,
+  MenuByIdDocument,
+  MenuByIdQuery,
 } from "../generated/graphql/graphql";
 import { gqlClient } from "../lib/react-query";
-import { StripePaymentForm } from "./StripePaymentForm";
 import { Receipt } from "./Receipt";
+import { StripePaymentForm } from "./StripePaymentForm";
 
 interface MenuItem {
   id: string;
@@ -53,18 +57,16 @@ function isValidMenu(data: unknown): data is GqlMenu {
   );
 }
 
-export const MenuDisplay: React.FC<MenuDisplayProps> = ({
-  menuId,
-  onOrderPlaced,
-}) => {
+export const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuId }) => {
+  const stripe = useStripe();
+  const [, navigate] = useLocation();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isReviewingPayment, setIsReviewingPayment] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+  const [savedPaymentMethodId, setSavedPaymentMethodId] = useState<
     string | null
-  >("stripe");
-  const [isPaymentMethodSelected, setIsPaymentMethodSelected] = useState(false);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  >(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const {
     data: menuQueryResult,
@@ -98,6 +100,14 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({
     }, 0);
   }, [quantities, menuQueryResult]);
 
+  const createSetupIntentMutation = useMutation<
+    CreateSetupIntentMutation,
+    Error,
+    Record<string, never>
+  >({
+    mutationFn: () => gqlClient.request(CreateSetupIntentDocument, {}),
+  });
+
   const createPaymentIntentMutation = useMutation<
     CreatePaymentIntentMutation,
     Error,
@@ -105,22 +115,6 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({
   >({
     mutationFn: (variables) =>
       gqlClient.request(CreatePaymentIntentDocument, variables),
-    onSuccess: (data) => {
-      if (data.createPaymentIntent.success && data.createPaymentIntent.data) {
-        setClientSecret(data.createPaymentIntent.data.clientSecret);
-        setPaymentIntentId(data.createPaymentIntent.data.paymentIntentId);
-        setIsPaymentMethodSelected(true);
-        toast.success("Payment ready", { description: "Enter card details." });
-      } else {
-        toast.error("Payment Setup Failed", {
-          description:
-            data.createPaymentIntent.message || "Could not prepare payment.",
-        });
-      }
-    },
-    onError: (error) => {
-      toast.error("Payment Setup Error", { description: error.message });
-    },
   });
 
   const createOrderFromPaymentMutation = useMutation<
@@ -141,17 +135,6 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({
     }
     const newQuantity = Math.max(0, quantity);
     setQuantities((prev) => ({ ...prev, [itemId]: newQuantity }));
-
-    if (clientSecret) {
-      console.log(
-        "Cart changed after payment initiated, invalidating current client secret."
-      );
-      toast.info("Cart Updated", {
-        description: "Total changed. Please confirm payment details again.",
-      });
-      setClientSecret(null);
-      setPaymentIntentId(null);
-    }
   };
 
   const handleReviewAndPay = () => {
@@ -168,34 +151,115 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({
     setIsReviewingPayment(true);
   };
 
-  const handleSelectPaymentMethod = () => {
-    if (!selectedPaymentMethod) {
-      toast.error("No Payment Method", {
-        description: "Please select a payment method.",
+  const handleCardSetupSuccess = (
+    paymentMethodId: string,
+    setupIntentCustomerId: string
+  ) => {
+    setSavedPaymentMethodId(paymentMethodId);
+    setCustomerId(setupIntentCustomerId);
+  };
+
+  const handlePayNow = async () => {
+    if (!stripe) {
+      toast.error("Stripe Error", { description: "Stripe not initialized." });
+      return;
+    }
+    if (!savedPaymentMethodId) {
+      toast.error("Payment Error", {
+        description: "Card details have not been confirmed.",
       });
       return;
     }
-    if (selectedPaymentMethod === "stripe") {
-      createPaymentIntentMutation.mutate({
+    if (currentTotal <= 0) {
+      toast.error("Payment Error", { description: "Cannot pay $0.00." });
+      return;
+    }
+    if (!customerId) {
+      toast.error("Payment Error", {
+        description: "Customer information is missing.",
+      });
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    let paymentIntentClientSecret: string | null = null;
+
+    try {
+      const piResult = await createPaymentIntentMutation.mutateAsync({
         input: {
           amount: currentTotal,
           currency: "usd",
+          customerId: customerId,
         },
       });
-    } else {
-      // Handle other payment methods if added later
-    }
-  };
 
-  const handleFinalPaymentSuccess = () => {
-    toast.success("Order Placed and Paid Successfully!");
-    setQuantities({});
-    setIsReviewingPayment(false);
-    setSelectedPaymentMethod(null);
-    setIsPaymentMethodSelected(false);
-    setClientSecret(null);
-    setPaymentIntentId(null);
-    onOrderPlaced("", 0);
+      if (
+        !piResult.createPaymentIntent.success ||
+        !piResult.createPaymentIntent.data?.clientSecret
+      ) {
+        throw new Error(
+          piResult.createPaymentIntent.message ||
+            "Failed to create payment intent."
+        );
+      }
+      paymentIntentClientSecret =
+        piResult.createPaymentIntent.data.clientSecret;
+
+      const { error: confirmError, paymentIntent } =
+        await stripe.confirmCardPayment(paymentIntentClientSecret, {
+          payment_method: savedPaymentMethodId,
+        });
+
+      if (confirmError) {
+        throw new Error(
+          confirmError.message || "Failed to confirm card payment."
+        );
+      }
+
+      if (paymentIntent?.status !== "succeeded") {
+        throw new Error(
+          `Payment not successful. Status: ${paymentIntent?.status}`
+        );
+      }
+
+      const orderResult = await createOrderFromPaymentMutation.mutateAsync({
+        input: {
+          paymentIntentId: paymentIntent.id,
+          menuId: menuId,
+          items: Object.entries(quantities)
+            .filter(([, q]) => q > 0)
+            .map(([id, q]) => ({ menuItemId: id, quantity: q })),
+        },
+      });
+
+      if (
+        !orderResult.createOrderFromPayment.success ||
+        !orderResult.createOrderFromPayment.data
+      ) {
+        toast.error("Order Creation Failed After Payment", {
+          description:
+            orderResult.createOrderFromPayment.message ||
+            "Please contact support.",
+        });
+        setIsProcessingPayment(false);
+        return;
+      }
+
+      toast.success("Order Placed and Paid Successfully!");
+      setQuantities({});
+      setIsReviewingPayment(false);
+      setSavedPaymentMethodId(null);
+      setCustomerId(null);
+      navigate(`/order/success/${orderResult.createOrderFromPayment.data.id}`);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An unknown error occurred during payment.";
+      toast.error("Payment Process Failed", { description: message });
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   if (isLoading) {
@@ -237,18 +301,18 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({
             menu.items.map((item) => (
               <div
                 key={item.id}
-                className="mb-4 border-b pb-4 last:mb-0 last:border-b-0 last:pb-0"
+                className="mb-4 border-b pb-4 last:mb-0 last:border-b-0 last:pb-0 w-full"
               >
-                <h3 className="font-semibold">
+                <h3 className="font-semibold text-center">
                   {item.name} - ${item.price.toFixed(2)}
                 </h3>
                 {item.description && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground text-center">
                     {item.description}
                   </p>
                 )}
                 {item.available ? (
-                  <div className="flex items-center space-x-2 mt-2 mx-auto w-fit">
+                  <div className="flex items-center justify-center space-x-2 mt-2 mx-auto w-fit">
                     <Button
                       variant="outline"
                       size="sm"
@@ -289,7 +353,9 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-sm text-destructive">Unavailable</p>
+                  <p className="text-sm text-destructive text-center">
+                    Unavailable
+                  </p>
                 )}
               </div>
             ))
@@ -306,50 +372,41 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({
       {isReviewingPayment && (
         <div className="mt-6 border-t pt-6">
           <h3 className="text-lg font-semibold mb-4 text-center">
-            {clientSecret
-              ? "Confirm Payment Details"
-              : "Review & Select Payment"}
+            Review Order & Payment
           </h3>
 
-          {!clientSecret && selectedPaymentMethod === "stripe" && (
-            <div className="mb-6 text-center">
-              <div className="p-3 border rounded-md text-muted-foreground mb-4">
-                Paying with Card (Stripe)
-              </div>
-              <Receipt totalAmount={currentTotal} processingFee={0} />
-              <Button
-                onClick={handleSelectPaymentMethod}
-                disabled={createPaymentIntentMutation.isPending}
-                className="mt-4 w-full"
-              >
-                {createPaymentIntentMutation.isPending
-                  ? "Setting up..."
-                  : "Proceed to Card Details"}
-              </Button>
-            </div>
-          )}
+          <Receipt totalAmount={currentTotal} processingFee={0} />
 
-          {clientSecret &&
-            paymentIntentId &&
-            selectedPaymentMethod === "stripe" && (
-              <>
-                <Receipt totalAmount={currentTotal} processingFee={0} />
-                <StripePaymentForm
-                  clientSecret={clientSecret}
-                  menuId={menuId}
-                  items={Object.entries(quantities)
-                    .filter(([_, quantity]) => quantity > 0)
-                    .map(([menuItemId, quantity]) => ({
-                      menuItemId,
-                      quantity,
-                    }))}
-                  onSuccess={handleFinalPaymentSuccess}
-                  createOrderFromPaymentMutation={
-                    createOrderFromPaymentMutation
-                  }
-                />
-              </>
-            )}
+          <StripePaymentForm
+            onSetupSuccess={handleCardSetupSuccess}
+            createSetupIntentMutation={createSetupIntentMutation}
+          />
+
+          <Button
+            onClick={handlePayNow}
+            disabled={
+              !savedPaymentMethodId ||
+              isProcessingPayment ||
+              createPaymentIntentMutation.isPending ||
+              createOrderFromPaymentMutation.isPending
+            }
+            className="mt-4 w-full"
+          >
+            {isProcessingPayment
+              ? "Processing Payment..."
+              : `Pay Now ($${currentTotal.toFixed(2)})`}
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              setIsReviewingPayment(false);
+            }}
+            className="mt-2 w-full"
+            disabled={isProcessingPayment}
+          >
+            Back to Menu
+          </Button>
         </div>
       )}
     </>

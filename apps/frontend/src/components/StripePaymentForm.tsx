@@ -8,46 +8,33 @@ import {
 import { UseMutationResult } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { toast } from "sonner";
-import {
-  CreateOrderFromPaymentMutation,
-  CreateOrderFromPaymentMutationVariables,
-} from "../generated/graphql/graphql"; // Adjust path
-import { stripePromise } from "../lib/react-query"; // Adjust path if needed
-
-// Define Item structure based on expected input for the mutation
-interface OrderItemInput {
-  menuItemId: string;
-  quantity: number;
-}
+import { CreateSetupIntentMutation } from "../generated/graphql/graphql";
+import { stripePromise } from "../lib/react-query";
 
 interface StripePaymentFormProps {
-  clientSecret: string;
-  menuId: string;
-  items: OrderItemInput[];
-  onSuccess: () => void;
-  createOrderFromPaymentMutation: UseMutationResult<
-    CreateOrderFromPaymentMutation,
+  onSetupSuccess: (paymentMethodId: string, customerId: string) => void; // Updated signature
+  createSetupIntentMutation: UseMutationResult<
+    CreateSetupIntentMutation,
     Error,
-    CreateOrderFromPaymentMutationVariables,
+    // No variables expected for createSetupIntent based on schema
+    Record<string, never>,
     unknown
   >;
 }
 
 const FormContent: React.FC<StripePaymentFormProps> = ({
-  clientSecret,
-  menuId,
-  items,
-  onSuccess,
-  createOrderFromPaymentMutation,
+  onSetupSuccess,
+  createSetupIntentMutation,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessingSetup, setIsProcessingSetup] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
+  const [showCardForm, setShowCardForm] = useState(true);
 
-  const handlePay = async (event: React.FormEvent) => {
+  const handleSetupConfirm = async (event: React.FormEvent) => {
     event.preventDefault();
-    setCardError(null); // Clear previous errors
+    setCardError(null);
 
     if (!stripe || !elements) {
       toast.error("Stripe Error", {
@@ -62,104 +49,109 @@ const FormContent: React.FC<StripePaymentFormProps> = ({
       return;
     }
 
-    setIsProcessing(true);
+    setIsProcessingSetup(true);
 
-    // 1. Confirm the payment with Stripe
-    const { error: stripeError, paymentIntent } =
-      await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card: cardElement },
-      });
+    try {
+      // 1. Create Setup Intent on backend
+      const setupIntentResult = await createSetupIntentMutation.mutateAsync({});
 
-    if (stripeError) {
-      setCardError(stripeError.message ?? "An unknown payment error occurred.");
-      toast.error("Payment Failed", { description: stripeError.message });
-      setIsProcessing(false);
-      return; // Stop processing
-    }
+      if (
+        !setupIntentResult.createSetupIntent.success ||
+        !setupIntentResult.createSetupIntent.data
+      ) {
+        const errorMsg =
+          setupIntentResult.createSetupIntent.message ||
+          "Could not create setup intent.";
+        toast.error("Setup Failed", { description: errorMsg });
+        setCardError(errorMsg);
+        setIsProcessingSetup(false);
+        return;
+      }
 
-    // 2. If Stripe payment succeeded, create the order on the backend
-    if (paymentIntent?.status === "succeeded") {
-      try {
-        const result = await createOrderFromPaymentMutation.mutateAsync({
-          input: {
-            paymentIntentId: paymentIntent.id,
-            menuId: menuId,
-            items: items,
-          },
+      const setupIntentClientSecret =
+        setupIntentResult.createSetupIntent.data.clientSecret;
+      const customerId = setupIntentResult.createSetupIntent.data.customerId; // Get customerId
+
+      // 2. Confirm Card Setup with Stripe using the client secret
+      const { error: stripeSetupError, setupIntent } =
+        await stripe.confirmCardSetup(setupIntentClientSecret, {
+          payment_method: { card: cardElement },
         });
 
-        if (result.createOrderFromPayment.success) {
-          toast.success("Payment Successful & Order Created!");
-          onSuccess(); // Trigger success callback (e.g., navigate home)
+      if (stripeSetupError) {
+        setCardError(
+          stripeSetupError.message ?? "An unknown setup error occurred."
+        );
+        toast.error("Card Confirmation Failed", {
+          description: stripeSetupError.message,
+        });
+      } else if (setupIntent?.status === "succeeded") {
+        if (setupIntent.payment_method && customerId) {
+          // Check customerId too
+          toast.success("Card Details Confirmed");
+          setShowCardForm(false); // Hide form, show confirmation
+          onSetupSuccess(setupIntent.payment_method as string, customerId); // Pass both IDs up
         } else {
-          // Handle backend order creation failure (though payment succeeded)
-          // This might require a reconciliation process.
-          toast.error("Order Creation Failed", {
+          toast.error("Setup Error", {
             description:
-              result.createOrderFromPayment.message ||
-              "Payment succeeded but failed to record order.",
+              "Payment method or customer ID missing after successful setup.", // Updated message
           });
           setCardError(
-            result.createOrderFromPayment.message ||
-              "Order creation failed after payment."
-          );
+            "Could not retrieve payment method or customer details."
+          ); // Updated message
         }
-      } catch (orderError: unknown) {
-        // Type assertion or check needed if accessing specific properties
-        let message = "An unexpected error occurred creating the order.";
-        if (orderError instanceof Error) {
-          message = orderError.message;
-        }
-        toast.error("Order Creation Error", { description: message });
-        setCardError(message);
-      } finally {
-        setIsProcessing(false);
+      } else {
+        toast.info("Card Setup Status", {
+          description: `Status: ${setupIntent?.status}`,
+        });
+        setCardError(`Card setup status: ${setupIntent?.status}`);
       }
-    } else {
-      // Use toast.info or toast.error for non-success statuses
-      toast.info("Payment Status", {
-        description: `Payment status: ${paymentIntent?.status}`,
-      });
-      setIsProcessing(false);
+    } catch (error: unknown) {
+      let message = "An unexpected error occurred during card setup.";
+      if (error instanceof Error) {
+        message = error.message;
+      }
+      toast.error("Setup Error", { description: message });
+      setCardError(message);
+    } finally {
+      setIsProcessingSetup(false);
     }
   };
 
   return (
     <form
-      onSubmit={handlePay}
-      className="flex flex-col text-left mt-4 border p-4"
+      onSubmit={handleSetupConfirm}
+      className="flex flex-col text-left mt-4 border p-4 rounded"
     >
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Card Details
-      </label>
-      <CardElement
-        options={
-          {
-            /* style options */
-          }
-        }
-        onChange={() => setCardError(null)}
-      />
-      {cardError && <p className="text-red-600 text-sm mt-1">{cardError}</p>}
-      <Button
-        type="submit"
-        disabled={
-          isProcessing ||
-          !stripe ||
-          !elements ||
-          createOrderFromPaymentMutation.isPending
-        }
-        className="w-full mt-4"
-      >
-        {isProcessing || createOrderFromPaymentMutation.isPending
-          ? "Processing..."
-          : "Pay Now"}
-      </Button>
+      {showCardForm ? (
+        <>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Card Details
+          </label>
+          <CardElement
+            options={{ style: { base: { fontSize: "16px" } } }}
+            onChange={() => setCardError(null)}
+          />
+          {cardError && (
+            <p className="text-red-600 text-sm mt-1">{cardError}</p>
+          )}
+          <Button
+            type="submit"
+            disabled={isProcessingSetup || !stripe || !elements}
+            className="w-full mt-4"
+          >
+            {isProcessingSetup ? "Processing..." : "Confirm Card Details"}
+          </Button>
+        </>
+      ) : (
+        <p className="text-green-600 text-center font-medium">
+          ✓ Card details confirmed and saved.
+        </p>
+      )}
     </form>
   );
 };
 
-// Main component wraps with Elements provider
 export const StripePaymentForm: React.FC<StripePaymentFormProps> = (props) => {
   return (
     <Elements stripe={stripePromise}>

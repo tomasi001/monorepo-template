@@ -1,0 +1,12 @@
+mutation CreateSetupIntent {
+  createSetupIntent {
+    statusCode
+    success
+    message
+    data {
+      setupIntentId
+      clientSecret
+      customerId
+    }
+  }
+}

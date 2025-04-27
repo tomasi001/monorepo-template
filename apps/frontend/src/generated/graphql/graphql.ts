@@ -57,11 +57,27 @@ export type CreatePaymentIntentData = {
 export type CreatePaymentIntentInput = {
   amount: Scalars["Float"]["input"];
   currency: Scalars["String"]["input"];
+  customerId?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type CreatePaymentIntentResponse = {
   __typename?: "CreatePaymentIntentResponse";
   data?: Maybe<CreatePaymentIntentData>;
+  message?: Maybe<Scalars["String"]["output"]>;
+  statusCode: Scalars["Int"]["output"];
+  success: Scalars["Boolean"]["output"];
+};
+
+export type CreateSetupIntentData = {
+  __typename?: "CreateSetupIntentData";
+  clientSecret: Scalars["String"]["output"];
+  customerId: Scalars["String"]["output"];
+  setupIntentId: Scalars["String"]["output"];
+};
+
+export type CreateSetupIntentResponse = {
+  __typename?: "CreateSetupIntentResponse";
+  data?: Maybe<CreateSetupIntentData>;
   message?: Maybe<Scalars["String"]["output"]>;
   statusCode: Scalars["Int"]["output"];
   success: Scalars["Boolean"]["output"];
@@ -107,6 +123,7 @@ export type Mutation = {
   createMenu: MenuResponse;
   createOrderFromPayment: CreateOrderFromPaymentResponse;
   createPaymentIntent: CreatePaymentIntentResponse;
+  createSetupIntent: CreateSetupIntentResponse;
   updateOrderStatus: OrderResponse;
   updatePaymentStatus: PaymentResponse;
 };
@@ -266,6 +283,26 @@ export type CreatePaymentIntentMutation = {
   };
 };
 
+export type CreateSetupIntentMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type CreateSetupIntentMutation = {
+  __typename?: "Mutation";
+  createSetupIntent: {
+    __typename?: "CreateSetupIntentResponse";
+    statusCode: number;
+    success: boolean;
+    message?: string | null;
+    data?: {
+      __typename?: "CreateSetupIntentData";
+      setupIntentId: string;
+      clientSecret: string;
+      customerId: string;
+    } | null;
+  };
+};
+
 export type HealthCheckQueryVariables = Exact<{ [key: string]: never }>;
 
 export type HealthCheckQuery = {
@@ -347,7 +384,7 @@ export type OrderQuery = {
       items: Array<{
         __typename?: "OrderItem";
         quantity: number;
-        menuItem: { __typename?: "MenuItem"; name: string };
+        menuItem: { __typename?: "MenuItem"; name: string; price: number };
       }>;
       payment?: {
         __typename?: "Payment";
@@ -567,6 +604,57 @@ export const CreatePaymentIntentDocument = {
 } as unknown as DocumentNode<
   CreatePaymentIntentMutation,
   CreatePaymentIntentMutationVariables
+>;
+export const CreateSetupIntentDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "CreateSetupIntent" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "createSetupIntent" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "statusCode" } },
+                { kind: "Field", name: { kind: "Name", value: "success" } },
+                { kind: "Field", name: { kind: "Name", value: "message" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "data" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "setupIntentId" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "clientSecret" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "customerId" },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CreateSetupIntentMutation,
+  CreateSetupIntentMutationVariables
 >;
 export const HealthCheckDocument = {
   kind: "Document",
@@ -849,6 +937,10 @@ export const OrderDocument = {
                                   {
                                     kind: "Field",
                                     name: { kind: "Name", value: "name" },
+                                  },
+                                  {
+                                    kind: "Field",
+                                    name: { kind: "Name", value: "price" },
                                   },
                                 ],
                               },

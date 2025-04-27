@@ -4,7 +4,9 @@ import { Toaster, toast } from "sonner";
 import { Link, Route, Router, Switch, useRoute } from "wouter";
 import "./App.css";
 import { MenuDisplay } from "./components/MenuDisplay";
-import { queryClient } from "./lib/react-query";
+import { OrderReceipt } from "./components/OrderReceipt";
+import { queryClient, stripePromise } from "./lib/react-query";
+import { Elements } from "@stripe/react-stripe-js";
 
 function App() {
   // QR Scan handler - now navigates using wouter patterns
@@ -84,20 +86,26 @@ function App() {
           <h1 className="text-3xl font-bold mb-6 text-center">
             QR Menu Scanner
           </h1>
-          <Switch>
-            {/* Home route only shows QR Scanner now */}
-            <Route path="/">
-              <QRScanner onScan={handleScan} onError={handleScanError} />
-            </Route>
-            {/* Menu route renders the MenuPage component */}
-            <Route path="/menu/:menuId">
-              <MenuPage />
-            </Route>
-            {/* Default route */}
-            <Route>
-              <p>404 - Page not found.</p>
-            </Route>
-          </Switch>
+          <Elements stripe={stripePromise}>
+            <Switch>
+              {/* Home route only shows QR Scanner now */}
+              <Route path="/">
+                <QRScanner onScan={handleScan} onError={handleScanError} />
+              </Route>
+              {/* Menu route renders the MenuPage component */}
+              <Route path="/menu/:menuId">
+                <MenuPage />
+              </Route>
+              {/* Add route for the order receipt */}
+              <Route path="/order/success/:orderId">
+                <OrderReceipt />
+              </Route>
+              {/* Default route */}
+              <Route>
+                <p>404 - Page not found.</p>
+              </Route>
+            </Switch>
+          </Elements>
           <Toaster richColors position="top-right" />
         </div>
       </Router>

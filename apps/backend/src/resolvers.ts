@@ -33,9 +33,9 @@ const resolvers: Resolvers<ContextValue> = {
     ...qrCodeResolver.Query, // Add QR code query
   },
   Mutation: {
-    ...menuResolver.Mutation, // Add menu mutations
-    ...paymentResolver.Mutation, // Contains createPaymentIntent, updatePaymentStatus
-    ...orderResolver.Mutation, // Contains createOrderFromPayment, updateOrderStatus
+    ...menuResolver.Mutation,
+    ...paymentResolver.Mutation, // Includes createSetupIntent now
+    ...orderResolver.Mutation,
   },
 };
 

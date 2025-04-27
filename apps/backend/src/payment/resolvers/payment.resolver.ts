@@ -2,8 +2,10 @@ import { PaymentService } from "../services/payment.service.js";
 import {
   PaymentResponse,
   CreatePaymentIntentResponse,
+  CreateSetupIntentResponse,
   Payment as GqlPayment,
   CreatePaymentIntentData,
+  CreateSetupIntentData,
 } from "../../generated/graphql-types.js";
 import { ContextValue } from "../../index.js";
 import { Payment } from "../entities/payment.entity.js";
@@ -20,6 +22,42 @@ const mapPaymentToGql = (payment: Payment): GqlPayment => ({
 
 export const paymentResolver = {
   Mutation: {
+    createSetupIntent: async (
+      _parent: unknown,
+      _args: Record<string, never>,
+      { prisma, stripe }: ContextValue
+    ): Promise<CreateSetupIntentResponse> => {
+      const service = new PaymentService(prisma, stripe);
+      try {
+        const setupIntentData = await service.createSetupIntent();
+        const responseData: CreateSetupIntentData = {
+          setupIntentId: setupIntentData.setupIntentId,
+          clientSecret: setupIntentData.clientSecret,
+          customerId: setupIntentData.customerId,
+        };
+        return {
+          statusCode: 201,
+          success: true,
+          message: "Setup Intent created successfully",
+          data: responseData,
+        };
+      } catch (error) {
+        if (error instanceof AppError) {
+          return {
+            statusCode: error.statusCode,
+            success: false,
+            message: error.message,
+            data: null,
+          };
+        }
+        return {
+          statusCode: 500,
+          success: false,
+          message: "An unexpected error occurred creating setup intent",
+          data: null,
+        };
+      }
+    },
     createPaymentIntent: async (
       _parent: unknown,
       { input }: { input: CreatePaymentIntentInputDto },

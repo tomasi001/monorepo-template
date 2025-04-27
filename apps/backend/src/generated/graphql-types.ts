@@ -60,11 +60,27 @@ export type CreatePaymentIntentData = {
 export type CreatePaymentIntentInput = {
   amount: Scalars["Float"]["input"];
   currency: Scalars["String"]["input"];
+  customerId?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type CreatePaymentIntentResponse = {
   __typename?: "CreatePaymentIntentResponse";
   data?: Maybe<CreatePaymentIntentData>;
+  message?: Maybe<Scalars["String"]["output"]>;
+  statusCode: Scalars["Int"]["output"];
+  success: Scalars["Boolean"]["output"];
+};
+
+export type CreateSetupIntentData = {
+  __typename?: "CreateSetupIntentData";
+  clientSecret: Scalars["String"]["output"];
+  customerId: Scalars["String"]["output"];
+  setupIntentId: Scalars["String"]["output"];
+};
+
+export type CreateSetupIntentResponse = {
+  __typename?: "CreateSetupIntentResponse";
+  data?: Maybe<CreateSetupIntentData>;
   message?: Maybe<Scalars["String"]["output"]>;
   statusCode: Scalars["Int"]["output"];
   success: Scalars["Boolean"]["output"];
@@ -110,6 +126,7 @@ export type Mutation = {
   createMenu: MenuResponse;
   createOrderFromPayment: CreateOrderFromPaymentResponse;
   createPaymentIntent: CreatePaymentIntentResponse;
+  createSetupIntent: CreateSetupIntentResponse;
   updateOrderStatus: OrderResponse;
   updatePaymentStatus: PaymentResponse;
 };
@@ -341,6 +358,8 @@ export type ResolversTypes = ResolversObject<{
   CreatePaymentIntentData: ResolverTypeWrapper<CreatePaymentIntentData>;
   CreatePaymentIntentInput: CreatePaymentIntentInput;
   CreatePaymentIntentResponse: ResolverTypeWrapper<CreatePaymentIntentResponse>;
+  CreateSetupIntentData: ResolverTypeWrapper<CreateSetupIntentData>;
+  CreateSetupIntentResponse: ResolverTypeWrapper<CreateSetupIntentResponse>;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
   HealthCheckStatus: ResolverTypeWrapper<HealthCheckStatus>;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
@@ -369,6 +388,8 @@ export type ResolversParentTypes = ResolversObject<{
   CreatePaymentIntentData: CreatePaymentIntentData;
   CreatePaymentIntentInput: CreatePaymentIntentInput;
   CreatePaymentIntentResponse: CreatePaymentIntentResponse;
+  CreateSetupIntentData: CreateSetupIntentData;
+  CreateSetupIntentResponse: CreateSetupIntentResponse;
   Float: Scalars["Float"]["output"];
   HealthCheckStatus: HealthCheckStatus;
   ID: Scalars["ID"]["output"];
@@ -431,6 +452,33 @@ export type CreatePaymentIntentResponseResolvers<
 > = ResolversObject<{
   data?: Resolver<
     Maybe<ResolversTypes["CreatePaymentIntentData"]>,
+    ParentType,
+    ContextType
+  >;
+  message?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  statusCode?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type CreateSetupIntentDataResolvers<
+  ContextType = ContextValue,
+  ParentType extends
+    ResolversParentTypes["CreateSetupIntentData"] = ResolversParentTypes["CreateSetupIntentData"],
+> = ResolversObject<{
+  clientSecret?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  customerId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  setupIntentId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type CreateSetupIntentResponseResolvers<
+  ContextType = ContextValue,
+  ParentType extends
+    ResolversParentTypes["CreateSetupIntentResponse"] = ResolversParentTypes["CreateSetupIntentResponse"],
+> = ResolversObject<{
+  data?: Resolver<
+    Maybe<ResolversTypes["CreateSetupIntentData"]>,
     ParentType,
     ContextType
   >;
@@ -517,6 +565,11 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreatePaymentIntentArgs, "input">
+  >;
+  createSetupIntent?: Resolver<
+    ResolversTypes["CreateSetupIntentResponse"],
+    ParentType,
+    ContextType
   >;
   updateOrderStatus?: Resolver<
     ResolversTypes["OrderResponse"],
@@ -654,6 +707,8 @@ export type Resolvers<ContextType = ContextValue> = ResolversObject<{
   CreateOrderFromPaymentResponse?: CreateOrderFromPaymentResponseResolvers<ContextType>;
   CreatePaymentIntentData?: CreatePaymentIntentDataResolvers<ContextType>;
   CreatePaymentIntentResponse?: CreatePaymentIntentResponseResolvers<ContextType>;
+  CreateSetupIntentData?: CreateSetupIntentDataResolvers<ContextType>;
+  CreateSetupIntentResponse?: CreateSetupIntentResponseResolvers<ContextType>;
   HealthCheckStatus?: HealthCheckStatusResolvers<ContextType>;
   Menu?: MenuResolvers<ContextType>;
   MenuItem?: MenuItemResolvers<ContextType>;

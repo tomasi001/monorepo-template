@@ -12,6 +12,7 @@ import {
 interface CreatePaymentIntentInputDto {
   amount: number;
   currency: string;
+  customerId?: string; // Added optional customer ID
   // items?: { menuItemId: string; quantity: number }[]; // Add if using items
 }
 
@@ -29,7 +30,7 @@ export class PaymentService {
     input: CreatePaymentIntentInputDto
   ): Promise<{ paymentIntentId: string; clientSecret: string }> {
     try {
-      const { amount, currency } = input;
+      const { amount, currency, customerId } = input;
 
       if (!this.stripe) {
         console.error("Stripe not initialized during payment intent creation");
@@ -46,8 +47,10 @@ export class PaymentService {
         paymentIntent = await this.stripe.paymentIntents.create({
           amount: Math.round(amount * 100), // Amount in cents
           currency: currency,
-          // automatic_payment_methods: { enabled: true }, // Consider enabling this
-          // metadata: { orderId: can't add yet as order isn't created }
+          // Pass customer if provided
+          ...(customerId && { customer: customerId }),
+          // We might need to specify payment_method_types or setup_future_usage
+          // depending on the exact flow desired, but let's start with this.
         });
       } catch (stripeError: unknown) {
         console.error("Stripe PaymentIntent creation failed:", stripeError);
@@ -82,6 +85,76 @@ export class PaymentService {
       console.error("Failed to create payment intent (outer):", error);
       throw new InternalServerError(
         "Failed to process payment intent creation request"
+      );
+    }
+  }
+
+  // --- New Method: createSetupIntent ---
+  async createSetupIntent(): Promise<{
+    setupIntentId: string;
+    clientSecret: string;
+    customerId: string;
+  }> {
+    try {
+      if (!this.stripe) {
+        console.error("Stripe not initialized during setup intent creation");
+        throw new InternalServerError("Payment provider not configured");
+      }
+
+      // 1. Create an anonymous Stripe Customer
+      let customer: Stripe.Customer;
+      try {
+        customer = await this.stripe.customers.create({
+          // Add description or metadata if needed for identification later
+          description: "Temporary customer for on-session payment",
+        });
+      } catch (customerError: unknown) {
+        console.error("Stripe Customer creation failed:", customerError);
+        throw new InternalServerError(
+          "Failed to create customer object for payment setup"
+        );
+      }
+
+      // 2. Create Setup Intent with Stripe, associating the customer
+      let setupIntent: Stripe.SetupIntent;
+      try {
+        setupIntent = await this.stripe.setupIntents.create({
+          customer: customer.id, // Associate the customer
+          usage: "on_session",
+          // automatic_payment_methods: { enabled: true }, // Consider enabling
+        });
+      } catch (stripeError: unknown) {
+        console.error("Stripe SetupIntent creation failed:", stripeError);
+        // Optionally attempt to delete the created customer here if desired
+        throw new InternalServerError(
+          "Failed to create setup intent with provider"
+        );
+      }
+
+      if (!setupIntent || !setupIntent.client_secret) {
+        console.error(
+          "Stripe SetupIntent created but client_secret is missing:",
+          setupIntent
+        );
+        throw new InternalServerError(
+          "Failed to get setup secret from provider"
+        );
+      }
+
+      console.log(`Created SetupIntent: ${setupIntent.id}`);
+      // Return relevant details (no DB record needed for Setup Intent itself)
+      return {
+        setupIntentId: setupIntent.id,
+        clientSecret: setupIntent.client_secret,
+        customerId: customer.id,
+      };
+    } catch (error) {
+      if (error instanceof InternalServerError) {
+        throw error;
+      }
+      console.error("Failed to create setup intent (outer):", error);
+      throw new InternalServerError(
+        "Failed to process setup intent creation request"
       );
     }
   }
