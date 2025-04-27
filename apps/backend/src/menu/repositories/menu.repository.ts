@@ -18,14 +18,15 @@ const mapPrismaMenuItemToEntity = (prismaItem: PrismaMenuItem): MenuItem => ({
 
 // Helper to map Prisma Menu (with items) to Entity Menu
 const mapPrismaMenuToEntity = (
-  prismaMenu: PrismaMenu & { items: PrismaMenuItem[] }
+  prismaMenu: PrismaMenu & { items?: PrismaMenuItem[] }
 ): Menu => ({
   id: prismaMenu.id,
   name: prismaMenu.name,
   qrCode: prismaMenu.qrCode,
+  qrCodeDataUrl: prismaMenu.qrCodeDataUrl,
   createdAt: prismaMenu.createdAt,
   updatedAt: prismaMenu.updatedAt,
-  items: prismaMenu.items.map(mapPrismaMenuItemToEntity),
+  items: prismaMenu.items?.map(mapPrismaMenuItemToEntity) ?? [],
 });
 
 export class MenuRepository {
@@ -40,15 +41,23 @@ export class MenuRepository {
       where: { qrCode },
       include: { items: { where: { available: true } } },
     });
+    if (prismaMenu && prismaMenu.qrCodeDataUrl === null) {
+      console.warn(
+        `[MenuRepository] Menu ${prismaMenu.id} found but qrCodeDataUrl is null despite schema requirement.`
+      );
+      return null;
+    }
     return prismaMenu ? mapPrismaMenuToEntity(prismaMenu) : null;
   }
 
-  async findById(id: string): Promise<Menu | null> {
-    console.log(`[MenuRepository] Attempting to find menu by ID: ${id}`);
+  async findMenuWithItems(id: string): Promise<Menu | null> {
+    console.log(
+      `[MenuRepository] Attempting to find menu with ALL items by ID: ${id}`
+    );
     try {
       const prismaMenu = await this.prisma.menu.findUnique({
         where: { id },
-        include: { items: { where: { available: true } } },
+        include: { items: true },
       });
       console.log(
         `[MenuRepository] Found menu by ID:`,
@@ -71,5 +80,40 @@ export class MenuRepository {
       where: { id: { in: ids } },
     });
     return prismaItems.map(mapPrismaMenuItemToEntity);
+  }
+
+  async create(data: { name: string; qrCode: string }): Promise<Menu> {
+    const prismaMenu = await this.prisma.menu.create({
+      data: {
+        name: data.name,
+        qrCode: data.qrCode,
+        qrCodeDataUrl: "PLACEHOLDER",
+      },
+    });
+    if (prismaMenu.qrCodeDataUrl === null) {
+      console.error(
+        `[MenuRepository] Menu ${prismaMenu.id} created but qrCodeDataUrl is unexpectedly null.`
+      );
+      throw new Error("Failed to properly initialize menu QR code URL.");
+    }
+    return mapPrismaMenuToEntity(prismaMenu);
+  }
+
+  async updateQrCodeDataUrl(
+    id: string,
+    qrCodeDataUrl: string
+  ): Promise<Menu | null> {
+    const prismaMenu = await this.prisma.menu.update({
+      where: { id },
+      data: { qrCodeDataUrl },
+      include: { items: true },
+    });
+    if (prismaMenu && prismaMenu.qrCodeDataUrl === null) {
+      console.warn(
+        `[MenuRepository] Menu ${prismaMenu.id} updated but qrCodeDataUrl is null.`
+      );
+      return null;
+    }
+    return mapPrismaMenuToEntity(prismaMenu);
   }
 }

@@ -26,6 +26,12 @@
     },
     "db:generate": {
       "cache": false
+    },
+    "db:seed": {
+      "cache": false
+    },
+    "db:studio": {
+      "cache": false
     }
   }
 }

@@ -10,15 +10,18 @@ import swaggerUi from "swagger-ui-express";
 import cors from "cors";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { getOpenAPISpec } from "@thoughtspot/graph-to-openapi";
+import { QrCodeService } from "./qr-code/qr-code.service.js";
 
 const prisma = new PrismaClient();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2023-10-16",
 });
+const qrCodeService = new QrCodeService();
 
 export interface ContextValue {
   prisma: PrismaClient;
   stripe: Stripe;
+  qrCodeService: QrCodeService;
   token?: string;
 }
 
@@ -92,6 +95,7 @@ async function startServer() {
       context: async ({ req }) => ({
         prisma,
         stripe,
+        qrCodeService,
         token: req.headers.token as string | undefined,
       }),
     })
@@ -99,11 +103,7 @@ async function startServer() {
 
   app.listen(4000, () => {
     console.log(`🚀 Server ready at http://localhost:4000/graphql`);
-    if (swaggerSpec) {
-      console.log(`📜 Swagger UI at http://localhost:4000/api/docs`);
-    } else {
-      console.log(`❌ Swagger UI disabled due to spec generation error.`);
-    }
+    console.log(`📜 Swagger UI at http://localhost:4000/api/docs`);
   });
 }
 

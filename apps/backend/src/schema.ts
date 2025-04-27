@@ -2,6 +2,7 @@
 import { gql } from "graphql-tag"; // Use graphql-tag for schema definition
 
 // Define the @rest directive required by @thoughtspot/graph-to-openapi
+// Keeping this for potential future Swagger generation via schema
 const directiveDefs = gql`
   directive @rest(
     """
@@ -34,9 +35,13 @@ const typeDefs = gql`
     healthCheck: HealthCheckStatus!
       @rest(path: "/health", method: "POST", tag: "Health")
     menu(qrCode: String!): MenuResponse!
-      @rest(path: "/menu/{qrCode}", method: "POST", tag: "Menu")
+      @rest(path: "/menu/qr/{qrCode}", method: "POST", tag: "Menu")
+    menuById(id: String!): MenuResponse!
+      @rest(path: "/menu/id/{id}", method: "POST", tag: "Menu")
     order(id: String!): OrderResponse!
       @rest(path: "/orders/{id}", method: "POST", tag: "Order")
+    generateQrCode(text: String!): QrCodeResponse!
+      @rest(path: "/qr/generate", method: "POST", tag: "QRCode")
   }
 
   # Simple type for the health check status
@@ -47,12 +52,18 @@ const typeDefs = gql`
   # Add Mutations, other Types, Inputs, etc. here later
 
   type Mutation {
-    createOrder(input: CreateOrderInput!): OrderResponse!
-      @rest(path: "/orders", method: "POST", tag: "Order")
+    createMenu(input: CreateMenuInput!): MenuResponse!
+      @rest(path: "/menu", method: "POST", tag: "Menu")
+    createPaymentIntent(
+      input: CreatePaymentIntentInput!
+    ): CreatePaymentIntentResponse!
+      @rest(path: "/payment/intent", method: "POST", tag: "Payment")
+    createOrderFromPayment(
+      input: CreateOrderFromPaymentInput!
+    ): CreateOrderFromPaymentResponse!
+      @rest(path: "/order/from-payment", method: "POST", tag: "Order")
     updateOrderStatus(id: String!, status: String!): OrderResponse!
       @rest(path: "/orders/{id}/status", method: "POST", tag: "Order")
-    initiatePayment(input: InitiatePaymentInput!): PaymentResponse!
-      @rest(path: "/payments", method: "POST", tag: "Payment")
     updatePaymentStatus(id: String!, status: String!): PaymentResponse!
       @rest(path: "/payments/{id}/status", method: "POST", tag: "Payment")
   }
@@ -78,10 +89,32 @@ const typeDefs = gql`
     data: Payment
   }
 
+  type QrCodeResponse {
+    statusCode: Int!
+    success: Boolean!
+    message: String!
+    data: String
+  }
+
+  type CreatePaymentIntentResponse {
+    statusCode: Int!
+    success: Boolean!
+    message: String
+    data: CreatePaymentIntentData
+  }
+
+  type CreateOrderFromPaymentResponse {
+    statusCode: Int!
+    success: Boolean!
+    message: String
+    data: Order
+  }
+
   type Menu {
     id: ID!
     name: String!
     qrCode: String!
+    qrCodeDataUrl: String!
     items: [MenuItem!]!
     createdAt: String!
     updatedAt: String!
@@ -128,9 +161,14 @@ const typeDefs = gql`
     updatedAt: String!
   }
 
-  input CreateOrderInput {
-    menuId: ID!
-    items: [OrderItemInput!]!
+  type CreatePaymentIntentData {
+    paymentIntentId: String!
+    clientSecret: String!
+  }
+
+  input CreateMenuInput {
+    name: String!
+    qrCode: String!
   }
 
   input OrderItemInput {
@@ -138,9 +176,15 @@ const typeDefs = gql`
     quantity: Int!
   }
 
-  input InitiatePaymentInput {
-    orderId: ID!
+  input CreatePaymentIntentInput {
     amount: Float!
+    currency: String!
+  }
+
+  input CreateOrderFromPaymentInput {
+    paymentIntentId: String!
+    menuId: ID!
+    items: [OrderItemInput!]!
   }
 `;
 

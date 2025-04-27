@@ -4,6 +4,7 @@ export interface Menu {
   id: string;
   name: string;
   qrCode: string;
+  qrCodeDataUrl: string;
   items: MenuItem[];
   createdAt: Date;
   updatedAt: Date;

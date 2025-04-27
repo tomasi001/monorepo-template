@@ -21,7 +21,8 @@
     "generate": "turbo run generate",
     "db:migrate:dev": "turbo run db:migrate:dev",
     "db:generate": "turbo run db:generate",
-    "db:studio": "cd packages/database && yarn db:studio"
+    "db:studio": "set -o allexport; source .env; set +o allexport && yarn db:generate && turbo run db:studio",
+    "db:seed": "set -o allexport; source .env; set +o allexport && yarn db:generate && turbo run db:seed"
   },
   "devDependencies": {
     "@packages/eslint-config-custom": "*",

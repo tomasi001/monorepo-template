@@ -1,8 +1,6 @@
 import { PrismaClient } from "@packages/database";
 import { Payment } from "../entities/payment.entity.js";
-import { InitiatePaymentInput } from "../dtos/initiate-payment.dto.js";
 import { PaymentRepository } from "../repositories/payment.repository.js";
-import { OrderRepository } from "../../order/repositories/order.repository.js";
 import Stripe from "stripe";
 import {
   NotFoundError,
@@ -10,87 +8,232 @@ import {
   InternalServerError,
 } from "../../common/errors/errors.js";
 
+// Define the structure expected by the new mutation
+interface CreatePaymentIntentInputDto {
+  amount: number;
+  currency: string;
+  // items?: { menuItemId: string; quantity: number }[]; // Add if using items
+}
+
 export class PaymentService {
   private paymentRepository: PaymentRepository;
-  private orderRepository: OrderRepository;
   private stripe: Stripe | null;
 
   constructor(prisma: PrismaClient, stripe: Stripe | null) {
     this.paymentRepository = new PaymentRepository(prisma);
-    this.orderRepository = new OrderRepository(prisma);
     this.stripe = stripe;
   }
 
-  async initiatePayment(input: InitiatePaymentInput): Promise<Payment> {
+  // --- New Method: createPaymentIntent ---
+  async createPaymentIntent(
+    input: CreatePaymentIntentInputDto
+  ): Promise<{ paymentIntentId: string; clientSecret: string }> {
     try {
-      const { orderId, amount } = input;
-      const order = await this.orderRepository.findById(orderId);
-      if (!order) {
-        throw new NotFoundError("Order not found");
-      }
-      if (order.payment) {
-        throw new BadRequestError("Payment already exists for this order");
-      }
+      const { amount, currency } = input;
+
       if (!this.stripe) {
-        console.error("Stripe not initialized during payment initiation");
+        console.error("Stripe not initialized during payment intent creation");
         throw new InternalServerError("Payment provider not configured");
       }
 
-      let paymentIntent;
+      if (amount <= 0) {
+        throw new BadRequestError("Payment amount must be positive.");
+      }
+
+      // Create Payment Intent with Stripe
+      let paymentIntent: Stripe.PaymentIntent;
       try {
         paymentIntent = await this.stripe.paymentIntents.create({
-          amount: Math.round(amount * 100),
-          currency: "usd",
-          metadata: { orderId },
+          amount: Math.round(amount * 100), // Amount in cents
+          currency: currency,
+          // automatic_payment_methods: { enabled: true }, // Consider enabling this
+          // metadata: { orderId: can't add yet as order isn't created }
         });
       } catch (stripeError: unknown) {
         console.error("Stripe PaymentIntent creation failed:", stripeError);
         throw new InternalServerError(
-          "Failed to initiate payment with provider"
+          "Failed to create payment intent with provider"
         );
       }
 
       if (!paymentIntent || !paymentIntent.client_secret) {
+        console.error(
+          "Stripe PaymentIntent created but client_secret is missing:",
+          paymentIntent
+        );
         throw new InternalServerError(
-          "Failed to get PaymentIntent ID from provider"
+          "Failed to get payment secret from provider"
         );
       }
 
-      const paymentData = {
-        orderId,
-        amount,
-        status: "PENDING",
-        stripeId: paymentIntent.client_secret,
+      console.log(`Created PaymentIntent: ${paymentIntent.id}`);
+      // Return relevant details WITHOUT saving to our DB yet
+      return {
+        paymentIntentId: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
       };
-
-      const payment = await this.paymentRepository.create(paymentData);
-      return payment;
     } catch (error) {
       if (
         error instanceof BadRequestError ||
-        error instanceof NotFoundError ||
         error instanceof InternalServerError
       ) {
         throw error;
       }
-      console.error("Failed to initiate payment (outer try/catch):", error);
-      throw new InternalServerError("Failed to initiate payment");
+      console.error("Failed to create payment intent (outer):", error);
+      throw new InternalServerError(
+        "Failed to process payment intent creation request"
+      );
     }
   }
 
+  // --- Deprecated/Old Method: initiatePayment ---
+  /*
+    async initiatePayment(input: InitiatePaymentInput): Promise<Payment> {
+      try {
+        const { orderId, amount } = input;
+
+        // 1. Check for existing payment for this order
+        const existingPayment =
+          await this.paymentRepository.findByOrderId(orderId);
+
+        // 2. Check if we can reuse the existing payment
+        if (existingPayment) {
+          // Allow reuse if PENDING or FAILED
+          const reusableStatuses = [
+            "PENDING",
+            "FAILED",
+            "REQUIRES_PAYMENT_METHOD",
+          ]; // Add other retryable statuses if needed
+          if (reusableStatuses.includes(existingPayment.status)) {
+            // Optional: Check if amount matches (important if amount can change)
+            if (existingPayment.amount !== amount) {
+              // Handling amount change might require updating the Stripe PaymentIntent
+              // or creating a new one. For simplicity, throw an error for now.
+              console.warn(
+                `Payment retry attempt for order ${orderId} with different amount. Original: ${existingPayment.amount}, New: ${amount}`
+              );
+              throw new BadRequestError(
+                "Payment amount mismatch on retry attempt. Please restart the order."
+              );
+            }
+
+            // Ensure stripeId (client_secret) exists
+            if (!existingPayment.stripeId) {
+              console.error(
+                `Existing reusable payment ${existingPayment.id} for order ${orderId} is missing stripeId.`
+              );
+              throw new InternalServerError(
+                "Cannot retry payment due to missing payment identifier."
+              );
+            }
+
+            // If reusable and amount matches, return the existing payment record
+            // The frontend will use its stripeId (client_secret) to retry with Stripe
+            console.log(
+              `Reusing existing payment ${existingPayment.id} for order ${orderId}`
+            );
+            return existingPayment;
+          } else {
+            // If status is not reusable (e.g., COMPLETED, CANCELED), throw error
+            throw new BadRequestError(
+              `Order ${orderId} already has a payment with status ${existingPayment.status}. Cannot initiate a new one.`
+            );
+          }
+        }
+
+        // 3. No reusable payment found, proceed to create a new one
+        // Ensure Stripe is configured
+        if (!this.stripe) {
+          console.error("Stripe not initialized during payment initiation");
+          throw new InternalServerError("Payment provider not configured");
+        }
+
+        // 4. Create a new Stripe PaymentIntent
+        let paymentIntent;
+        try {
+          paymentIntent = await this.stripe.paymentIntents.create({
+            amount: Math.round(amount * 100), // Ensure amount is in cents
+            currency: "usd", // Or get from config/order
+            metadata: { orderId },
+            // Consider adding setup_future_usage if relevant
+          });
+        } catch (stripeError: unknown) {
+          console.error("Stripe PaymentIntent creation failed:", stripeError);
+          throw new InternalServerError(
+            "Failed to initiate payment with provider"
+          );
+        }
+
+        if (!paymentIntent || !paymentIntent.client_secret) {
+          // This case indicates a problem with Stripe response
+          console.error(
+            "Stripe PaymentIntent created but client_secret is missing:",
+            paymentIntent
+          );
+          throw new InternalServerError(
+            "Failed to get PaymentIntent secret from provider"
+          );
+        }
+
+        // 5. Create a new payment record in DB
+        const paymentData = {
+          orderId,
+          amount,
+          status: "PENDING", // Initial status
+          stripeId: paymentIntent.client_secret, // Store the client secret
+        };
+
+        console.log(`Creating new payment for order ${orderId}`);
+        const newPayment = await this.paymentRepository.create(paymentData);
+        return newPayment;
+      } catch (error) {
+        // Re-throw specific errors, otherwise wrap as InternalServerError
+        if (
+          error instanceof BadRequestError ||
+          error instanceof NotFoundError ||
+          error instanceof InternalServerError
+        ) {
+          throw error;
+        }
+        console.error("Failed to initiate payment (outer try/catch):", error);
+        throw new InternalServerError(
+          "Failed to process payment initiation request"
+        );
+      }
+    }
+    */
+
+  // --- updatePaymentStatus remains largely the same for now ---
+  // Although it might be called less often if order creation happens after payment
   async updatePaymentStatus(id: string, status: string): Promise<Payment> {
     try {
       const validStatuses = ["PENDING", "COMPLETED", "FAILED"];
       if (!validStatuses.includes(status)) {
         throw new BadRequestError("Invalid payment status");
       }
-      const payment = await this.paymentRepository.updateStatus(id, status);
+      // Find payment by our DB ID
+      const payment = await this.paymentRepository.findById(id); // Need findById in repo
       if (!payment) {
         throw new NotFoundError("Payment not found");
       }
-      return payment;
+      // Update status
+      const updatedPayment = await this.paymentRepository.updateStatus(
+        id,
+        status
+      );
+      if (!updatedPayment) {
+        // Should not happen if findById succeeded, but check anyway
+        throw new InternalServerError(
+          "Failed to update payment status after finding payment."
+        );
+      }
+      return updatedPayment;
     } catch (error) {
-      if (error instanceof BadRequestError || error instanceof NotFoundError) {
+      if (
+        error instanceof BadRequestError ||
+        error instanceof NotFoundError ||
+        error instanceof InternalServerError
+      ) {
         throw error;
       }
       console.error("Failed to update payment status:", error);

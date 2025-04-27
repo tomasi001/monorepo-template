@@ -4,6 +4,7 @@ import { ContextValue } from "./index.js"; // Import ContextValue
 import { menuResolver } from "./menu/resolvers/menu.resolver.js";
 import { orderResolver } from "./order/resolvers/order.resolver.js";
 import { paymentResolver } from "./payment/resolvers/payment.resolver.js";
+import { qrCodeResolver } from "./qr-code/qr-code.resolver.js"; // Import the new resolver
 
 // Provide resolver functions for your schema fields
 const resolvers: Resolvers<ContextValue> = {
@@ -29,10 +30,12 @@ const resolvers: Resolvers<ContextValue> = {
     },
     ...menuResolver.Query,
     ...orderResolver.Query,
+    ...qrCodeResolver.Query, // Add QR code query
   },
   Mutation: {
-    ...orderResolver.Mutation,
-    ...paymentResolver.Mutation,
+    ...menuResolver.Mutation, // Add menu mutations
+    ...paymentResolver.Mutation, // Contains createPaymentIntent, updatePaymentStatus
+    ...orderResolver.Mutation, // Contains createOrderFromPayment, updateOrderStatus
   },
 };
 

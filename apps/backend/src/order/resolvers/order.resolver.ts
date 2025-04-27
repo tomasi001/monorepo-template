@@ -1,6 +1,7 @@
 import { OrderService } from "../services/order.service.js";
 import {
   OrderResponse,
+  CreateOrderFromPaymentResponse,
   Order as GqlOrder,
   OrderItem as GqlOrderItem,
   Payment as GqlPayment,
@@ -10,7 +11,7 @@ import { ContextValue } from "../../index.js";
 import { Order, OrderItem } from "../entities/order.entity.js";
 import { Payment } from "../../payment/entities/payment.entity.js";
 import { MenuItem } from "../../menu/entities/menu.entity.js";
-import { CreateOrderInput } from "../dtos/create-order.dto.js";
+import { CreateOrderFromPaymentInputDto } from "../dtos/create-order-from-payment.dto.js";
 import { AppError } from "../../common/errors/errors.js";
 
 // Helper to map entity dates/nulls to GraphQL strings/types
@@ -45,35 +46,6 @@ const mapPaymentToGql = (payment: Payment): GqlPayment => ({
   updatedAt: payment.updatedAt.toISOString(),
 });
 
-/**
- * @swagger
- * /graphql:
- *   post:
- *     summary: Get order by ID
- *     tags: [Order]
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               query:
- *                 type: string
- *                 example: >-
- *                   query {
- *                     order(id: \"ORDER_ID\") {
- *                       statusCode
- *                       success
- *                       message
- *                       data { id total status }
- *                     }
- *                   }
- *     responses:
- *       200:
- *         description: Order retrieved successfully
- *       404:
- *         description: Order not found
- */
 export const orderResolver = {
   Query: {
     order: async (
@@ -81,7 +53,7 @@ export const orderResolver = {
       { id }: { id: string },
       { prisma }: ContextValue
     ): Promise<OrderResponse> => {
-      const service = new OrderService(prisma);
+      const service = new OrderService(prisma, null);
       try {
         const orderEntity = await service.getOrder(id);
         const orderData = mapOrderToGql(orderEntity);
@@ -103,55 +75,26 @@ export const orderResolver = {
         return {
           statusCode: 500,
           success: false,
-          message: "An unexpected error occurred",
+          message: "An unexpected error occurred retrieving order",
           data: null,
         };
       }
     },
   },
   Mutation: {
-    /**
-     * @swagger
-     * /graphql:
-     *   post:
-     *     summary: Create a new order
-     *     tags: [Order]
-     *     requestBody:
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               query:
-     *                 type: string
-     *                 example: >-
-     *                   mutation {
-     *                     createOrder(input: { menuId: \"MENU_ID\", items: [{ menuItemId: \"ITEM_ID\", quantity: 2 }] }) {
-     *                       statusCode
-     *                       success
-     *                       message
-     *                       data { id total }
-     *                     }
-     *                   }
-     *     responses:
-     *       201:
-     *         description: Order created successfully
-     *       400:
-     *         description: Invalid input
-     */
-    createOrder: async (
+    createOrderFromPayment: async (
       _parent: unknown,
-      { input }: { input: CreateOrderInput },
-      { prisma }: ContextValue
-    ): Promise<OrderResponse> => {
-      const service = new OrderService(prisma);
+      { input }: { input: CreateOrderFromPaymentInputDto },
+      { prisma, stripe }: ContextValue
+    ): Promise<CreateOrderFromPaymentResponse> => {
+      const service = new OrderService(prisma, stripe);
       try {
-        const orderEntity = await service.createOrder(input);
+        const orderEntity = await service.createOrderFromPayment(input);
         const orderData = mapOrderToGql(orderEntity);
         return {
           statusCode: 201,
           success: true,
-          message: "Order created successfully",
+          message: "Order created successfully from payment",
           data: orderData,
         };
       } catch (error) {
@@ -166,46 +109,17 @@ export const orderResolver = {
         return {
           statusCode: 500,
           success: false,
-          message: "An unexpected error occurred",
+          message: "An unexpected error occurred creating order from payment",
           data: null,
         };
       }
     },
-    /**
-     * @swagger
-     * /graphql:
-     *   post:
-     *     summary: Update order status
-     *     tags: [Order]
-     *     requestBody:
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               query:
-     *                 type: string
-     *                 example: >-
-     *                   mutation {
-     *                     updateOrderStatus(id: \"ORDER_ID\", status: \"CONFIRMED\") {
-     *                       statusCode
-     *                       success
-     *                       message
-     *                       data { id status }
-     *                     }
-     *                   }
-     *     responses:
-     *       200:
-     *         description: Order status updated successfully
-     *       404:
-     *         description: Order not found
-     */
     updateOrderStatus: async (
       _parent: unknown,
       { id, status }: { id: string; status: string },
       { prisma }: ContextValue
     ): Promise<OrderResponse> => {
-      const service = new OrderService(prisma);
+      const service = new OrderService(prisma, null);
       try {
         const orderEntity = await service.updateOrderStatus(id, status);
         const orderData = mapOrderToGql(orderEntity);
@@ -227,7 +141,7 @@ export const orderResolver = {
         return {
           statusCode: 500,
           success: false,
-          message: "An unexpected error occurred",
+          message: "An unexpected error occurred updating order status",
           data: null,
         };
       }

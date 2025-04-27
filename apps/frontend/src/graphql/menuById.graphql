@@ -1,0 +1,19 @@
+query MenuById($id: String!) {
+  menuById(id: $id) {
+    statusCode
+    success
+    message
+    data {
+      id
+      name
+      # Ensure all fields needed by the updated MenuDisplay are here
+      items {
+        id
+        name
+        description
+        price
+        available
+      }
+    }
+  }
+}

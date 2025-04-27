@@ -1,0 +1,27 @@
+mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {
+  createOrderFromPayment(input: $input) {
+    statusCode
+    success
+    message
+    # Request the order data needed by the frontend upon success
+    data {
+      id
+      total
+      status
+      items {
+        quantity
+        price
+        menuItem {
+          id
+          name
+        }
+      }
+      # Include payment details if needed
+      # payment {
+      #   id
+      #   status
+      #   amount
+      # }
+    }
+  }
+}
