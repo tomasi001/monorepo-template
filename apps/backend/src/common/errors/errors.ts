@@ -27,3 +27,15 @@ export class InternalServerError extends AppError {
     super(message, 500, "INTERNAL_SERVER_ERROR");
   }
 }
+
+export class AuthenticationError extends AppError {
+  constructor(message: string = "Authentication required") {
+    super(message, 401, "UNAUTHENTICATED");
+  }
+}
+
+export class AuthorizationError extends AppError {
+  constructor(message: string = "Permission denied") {
+    super(message, 403, "FORBIDDEN");
+  }
+}

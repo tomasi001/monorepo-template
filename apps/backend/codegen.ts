@@ -3,17 +3,19 @@ import type { CodegenConfig } from "@graphql-codegen/cli";
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: "./src/schema.ts", // Point to your schema file
+  schema: "src/**/*.graphql", // New: Load all .graphql files using glob pattern
   generates: {
     "src/generated/graphql-types.ts": {
       plugins: ["typescript", "typescript-resolvers"],
       config: {
         useIndexSignature: true,
         contextType: "../index.js#ContextValue",
+        // Potentially add mappers config later if needed for Prisma types vs GQL types
       },
     },
   },
-  require: ["ts-node/register"], // Needed to read .ts schema file
+  // Remove require as we are using .graphql file directly
+  // require: ["ts-node/register"],
 };
 
 export default config;

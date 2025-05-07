@@ -1,0 +1,65 @@
+# --- Admin Object Type ---
+type Admin {
+  id: ID!
+  email: String!
+  role: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# --- Admin Input Types ---
+input LoginAdminInput {
+  email: String!
+  password: String!
+}
+
+# --- Admin Response Types ---
+type LoginAdminResponse {
+  token: String!
+  admin: Admin!
+}
+
+# --- Super Admin Specific Types ---
+type Commission {
+  id: ID!
+  percentage: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type PaymentWithCommission {
+  id: ID!
+  orderId: ID!
+  amount: Float!
+  status: String!
+  paystackReference: String
+  commissionAmount: Float!
+  netAmount: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type DashboardMetrics {
+  totalRestaurants: Int!
+  totalMenus: Int!
+  totalOrders: Int!
+  totalPayments: Float!
+  totalCommission: Float!
+}
+
+# --- Admin Queries ---
+extend type Query {
+  # Super Admin Queries
+  payments: [PaymentWithCommission!]! # Super admin only
+  commission: Commission # Super admin only
+  dashboardMetrics: DashboardMetrics # Super admin only
+}
+
+# --- Admin Mutations ---
+extend type Mutation {
+  # Admin Login
+  loginAdmin(input: LoginAdminInput!): LoginAdminResponse!
+
+  # Super Admin Mutations
+  updateCommission(percentage: Float!): Commission! # Super admin only
+}

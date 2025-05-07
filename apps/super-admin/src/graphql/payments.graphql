@@ -1,0 +1,12 @@
+query Payments {
+  payments {
+    id
+    orderId
+    amount
+    status
+    paystackReference
+    commissionAmount
+    netAmount
+    createdAt
+  }
+}

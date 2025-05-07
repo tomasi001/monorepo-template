@@ -1,0 +1,35 @@
+# --- Payment Object Types ---
+type Payment {
+  id: ID!
+  orderId: ID!
+  order: Order! # Reference to Order type (defined in order.graphql)
+  amount: Float!
+  status: String!
+  paystackReference: String
+  createdAt: String!
+  updatedAt: String!
+}
+
+# --- Payment Input Types ---
+input InitializeTransactionInput {
+  amount: Float!
+  currency: String!
+  email: String! # Paystack requires email
+  name: String! # Paystack requires name
+  metadata: JSON! # Reference to base JSON scalar
+}
+
+# --- Payment Response Types ---
+type InitializeTransactionResponse {
+  authorizationUrl: String!
+  accessCode: String!
+  reference: String!
+}
+
+# --- Payment Mutations ---
+extend type Mutation {
+  # Payment Initialization (Customer facing)
+  initializeTransaction(
+    input: InitializeTransactionInput!
+  ): InitializeTransactionResponse!
+}

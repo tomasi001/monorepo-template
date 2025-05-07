@@ -1,0 +1,8 @@
+# Frontend mutation to initialize a Paystack transaction
+mutation InitializeTransaction($input: InitializeTransactionInput!) {
+  initializeTransaction(input: $input) {
+    authorizationUrl
+    accessCode
+    reference
+  }
+}

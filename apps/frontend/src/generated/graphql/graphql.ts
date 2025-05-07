@@ -27,6 +27,24 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
+  JSON: { input: any; output: any };
+};
+
+export type Admin = {
+  __typename?: "Admin";
+  createdAt: Scalars["String"]["output"];
+  email: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  role: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type Commission = {
+  __typename?: "Commission";
+  createdAt: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  percentage: Scalars["Float"]["output"];
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type CreateMenuInput = {
@@ -34,58 +52,52 @@ export type CreateMenuInput = {
   qrCode: Scalars["String"]["input"];
 };
 
+export type CreateMenuItemInput = {
+  available?: InputMaybe<Scalars["Boolean"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  name: Scalars["String"]["input"];
+  price: Scalars["Float"]["input"];
+};
+
 export type CreateOrderFromPaymentInput = {
   items: Array<OrderItemInput>;
   menuId: Scalars["ID"]["input"];
-  paymentIntentId: Scalars["String"]["input"];
+  paystackReference: Scalars["String"]["input"];
 };
 
-export type CreateOrderFromPaymentResponse = {
-  __typename?: "CreateOrderFromPaymentResponse";
-  data?: Maybe<Order>;
-  message?: Maybe<Scalars["String"]["output"]>;
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
+export type DashboardMetrics = {
+  __typename?: "DashboardMetrics";
+  totalCommission: Scalars["Float"]["output"];
+  totalMenus: Scalars["Int"]["output"];
+  totalOrders: Scalars["Int"]["output"];
+  totalPayments: Scalars["Float"]["output"];
+  totalRestaurants: Scalars["Int"]["output"];
 };
 
-export type CreatePaymentIntentData = {
-  __typename?: "CreatePaymentIntentData";
-  clientSecret: Scalars["String"]["output"];
-  paymentIntentId: Scalars["String"]["output"];
-};
-
-export type CreatePaymentIntentInput = {
+export type InitializeTransactionInput = {
   amount: Scalars["Float"]["input"];
   currency: Scalars["String"]["input"];
-  customerId?: InputMaybe<Scalars["String"]["input"]>;
+  email: Scalars["String"]["input"];
+  metadata: Scalars["JSON"]["input"];
+  name: Scalars["String"]["input"];
 };
 
-export type CreatePaymentIntentResponse = {
-  __typename?: "CreatePaymentIntentResponse";
-  data?: Maybe<CreatePaymentIntentData>;
-  message?: Maybe<Scalars["String"]["output"]>;
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
+export type InitializeTransactionResponse = {
+  __typename?: "InitializeTransactionResponse";
+  accessCode: Scalars["String"]["output"];
+  authorizationUrl: Scalars["String"]["output"];
+  reference: Scalars["String"]["output"];
 };
 
-export type CreateSetupIntentData = {
-  __typename?: "CreateSetupIntentData";
-  clientSecret: Scalars["String"]["output"];
-  customerId: Scalars["String"]["output"];
-  setupIntentId: Scalars["String"]["output"];
+export type LoginAdminInput = {
+  email: Scalars["String"]["input"];
+  password: Scalars["String"]["input"];
 };
 
-export type CreateSetupIntentResponse = {
-  __typename?: "CreateSetupIntentResponse";
-  data?: Maybe<CreateSetupIntentData>;
-  message?: Maybe<Scalars["String"]["output"]>;
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
-};
-
-export type HealthCheckStatus = {
-  __typename?: "HealthCheckStatus";
-  status: Scalars["String"]["output"];
+export type LoginAdminResponse = {
+  __typename?: "LoginAdminResponse";
+  admin: Admin;
+  token: Scalars["String"]["output"];
 };
 
 export type Menu = {
@@ -94,6 +106,7 @@ export type Menu = {
   id: Scalars["ID"]["output"];
   items: Array<MenuItem>;
   name: Scalars["String"]["output"];
+  orders: Array<Order>;
   qrCode: Scalars["String"]["output"];
   qrCodeDataUrl: Scalars["String"]["output"];
   updatedAt: Scalars["String"]["output"];
@@ -105,27 +118,32 @@ export type MenuItem = {
   createdAt: Scalars["String"]["output"];
   description?: Maybe<Scalars["String"]["output"]>;
   id: Scalars["ID"]["output"];
+  menuId: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
   price: Scalars["Float"]["output"];
   updatedAt: Scalars["String"]["output"];
 };
 
-export type MenuResponse = {
-  __typename?: "MenuResponse";
-  data?: Maybe<Menu>;
-  message: Scalars["String"]["output"];
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
-};
-
 export type Mutation = {
   __typename?: "Mutation";
-  createMenu: MenuResponse;
-  createOrderFromPayment: CreateOrderFromPaymentResponse;
-  createPaymentIntent: CreatePaymentIntentResponse;
-  createSetupIntent: CreateSetupIntentResponse;
-  updateOrderStatus: OrderResponse;
-  updatePaymentStatus: PaymentResponse;
+  _empty?: Maybe<Scalars["String"]["output"]>;
+  addMenuItem: MenuItem;
+  createMenu: Menu;
+  createOrderFromPayment: Order;
+  deleteMenu: Menu;
+  deleteMenuItem: MenuItem;
+  generateMenuQrCode: QrCodeResponse;
+  initializeTransaction: InitializeTransactionResponse;
+  loginAdmin: LoginAdminResponse;
+  updateCommission: Commission;
+  updateMenu: Menu;
+  updateMenuItem: MenuItem;
+  updateOrderStatus: Order;
+};
+
+export type MutationAddMenuItemArgs = {
+  input: CreateMenuItemInput;
+  menuId: Scalars["ID"]["input"];
 };
 
 export type MutationCreateMenuArgs = {
@@ -136,17 +154,42 @@ export type MutationCreateOrderFromPaymentArgs = {
   input: CreateOrderFromPaymentInput;
 };
 
-export type MutationCreatePaymentIntentArgs = {
-  input: CreatePaymentIntentInput;
+export type MutationDeleteMenuArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteMenuItemArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationGenerateMenuQrCodeArgs = {
+  menuId: Scalars["ID"]["input"];
+};
+
+export type MutationInitializeTransactionArgs = {
+  input: InitializeTransactionInput;
+};
+
+export type MutationLoginAdminArgs = {
+  input: LoginAdminInput;
+};
+
+export type MutationUpdateCommissionArgs = {
+  percentage: Scalars["Float"]["input"];
+};
+
+export type MutationUpdateMenuArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateMenuInput;
+};
+
+export type MutationUpdateMenuItemArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateMenuItemInput;
 };
 
 export type MutationUpdateOrderStatusArgs = {
-  id: Scalars["String"]["input"];
-  status: Scalars["String"]["input"];
-};
-
-export type MutationUpdatePaymentStatusArgs = {
-  id: Scalars["String"]["input"];
+  id: Scalars["ID"]["input"];
   status: Scalars["String"]["input"];
 };
 
@@ -155,6 +198,7 @@ export type Order = {
   createdAt: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
   items: Array<OrderItem>;
+  menu: Menu;
   menuId: Scalars["ID"]["output"];
   payment?: Maybe<Payment>;
   status: Scalars["String"]["output"];
@@ -168,22 +212,17 @@ export type OrderItem = {
   id: Scalars["ID"]["output"];
   menuItem: MenuItem;
   menuItemId: Scalars["ID"]["output"];
+  order: Order;
+  orderId: Scalars["ID"]["output"];
   price: Scalars["Float"]["output"];
   quantity: Scalars["Int"]["output"];
   updatedAt: Scalars["String"]["output"];
 };
 
 export type OrderItemInput = {
+  menuId: Scalars["ID"]["input"];
   menuItemId: Scalars["ID"]["input"];
   quantity: Scalars["Int"]["input"];
-};
-
-export type OrderResponse = {
-  __typename?: "OrderResponse";
-  data?: Maybe<Order>;
-  message: Scalars["String"]["output"];
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
 };
 
 export type Payment = {
@@ -191,51 +230,65 @@ export type Payment = {
   amount: Scalars["Float"]["output"];
   createdAt: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+  order: Order;
   orderId: Scalars["ID"]["output"];
+  paystackReference?: Maybe<Scalars["String"]["output"]>;
   status: Scalars["String"]["output"];
-  stripeId?: Maybe<Scalars["String"]["output"]>;
   updatedAt: Scalars["String"]["output"];
 };
 
-export type PaymentResponse = {
-  __typename?: "PaymentResponse";
-  data?: Maybe<Payment>;
-  message: Scalars["String"]["output"];
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
+export type PaymentWithCommission = {
+  __typename?: "PaymentWithCommission";
+  amount: Scalars["Float"]["output"];
+  commissionAmount: Scalars["Float"]["output"];
+  createdAt: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  netAmount: Scalars["Float"]["output"];
+  orderId: Scalars["ID"]["output"];
+  paystackReference?: Maybe<Scalars["String"]["output"]>;
+  status: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type QrCodeResponse = {
   __typename?: "QrCodeResponse";
-  data?: Maybe<Scalars["String"]["output"]>;
-  message: Scalars["String"]["output"];
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
+  qrCodeDataUrl: Scalars["String"]["output"];
+  qrCodeUrl: Scalars["String"]["output"];
 };
 
 export type Query = {
   __typename?: "Query";
-  generateQrCode: QrCodeResponse;
-  healthCheck: HealthCheckStatus;
-  menu: MenuResponse;
-  menuById: MenuResponse;
-  order: OrderResponse;
-};
-
-export type QueryGenerateQrCodeArgs = {
-  text: Scalars["String"]["input"];
+  commission?: Maybe<Commission>;
+  dashboardMetrics?: Maybe<DashboardMetrics>;
+  healthCheck: Scalars["String"]["output"];
+  menu?: Maybe<Menu>;
+  menus: Array<Menu>;
+  order?: Maybe<Order>;
+  orderByReference?: Maybe<Order>;
+  payments: Array<PaymentWithCommission>;
 };
 
 export type QueryMenuArgs = {
-  qrCode: Scalars["String"]["input"];
-};
-
-export type QueryMenuByIdArgs = {
-  id: Scalars["String"]["input"];
+  id: Scalars["ID"]["input"];
 };
 
 export type QueryOrderArgs = {
-  id: Scalars["String"]["input"];
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryOrderByReferenceArgs = {
+  reference: Scalars["String"]["input"];
+};
+
+export type UpdateMenuInput = {
+  name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UpdateMenuItemInput = {
+  available?: InputMaybe<Scalars["Boolean"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  price?: InputMaybe<Scalars["Float"]["input"]>;
 };
 
 export type CreateOrderFromPaymentMutationVariables = Exact<{
@@ -245,186 +298,99 @@ export type CreateOrderFromPaymentMutationVariables = Exact<{
 export type CreateOrderFromPaymentMutation = {
   __typename?: "Mutation";
   createOrderFromPayment: {
-    __typename?: "CreateOrderFromPaymentResponse";
-    statusCode: number;
-    success: boolean;
-    message?: string | null;
-    data?: {
-      __typename?: "Order";
-      id: string;
-      total: number;
-      status: string;
-      items: Array<{
-        __typename?: "OrderItem";
-        quantity: number;
-        price: number;
-        menuItem: { __typename?: "MenuItem"; id: string; name: string };
-      }>;
-    } | null;
-  };
-};
-
-export type CreatePaymentIntentMutationVariables = Exact<{
-  input: CreatePaymentIntentInput;
-}>;
-
-export type CreatePaymentIntentMutation = {
-  __typename?: "Mutation";
-  createPaymentIntent: {
-    __typename?: "CreatePaymentIntentResponse";
-    statusCode: number;
-    success: boolean;
-    message?: string | null;
-    data?: {
-      __typename?: "CreatePaymentIntentData";
-      paymentIntentId: string;
-      clientSecret: string;
-    } | null;
-  };
-};
-
-export type CreateSetupIntentMutationVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type CreateSetupIntentMutation = {
-  __typename?: "Mutation";
-  createSetupIntent: {
-    __typename?: "CreateSetupIntentResponse";
-    statusCode: number;
-    success: boolean;
-    message?: string | null;
-    data?: {
-      __typename?: "CreateSetupIntentData";
-      setupIntentId: string;
-      clientSecret: string;
-      customerId: string;
-    } | null;
+    __typename?: "Order";
+    id: string;
+    total: number;
+    status: string;
+    items: Array<{
+      __typename?: "OrderItem";
+      quantity: number;
+      price: number;
+      menuItem: { __typename?: "MenuItem"; id: string; name: string };
+    }>;
   };
 };
 
 export type HealthCheckQueryVariables = Exact<{ [key: string]: never }>;
 
-export type HealthCheckQuery = {
-  __typename?: "Query";
-  healthCheck: { __typename?: "HealthCheckStatus"; status: string };
+export type HealthCheckQuery = { __typename?: "Query"; healthCheck: string };
+
+export type InitializeTransactionMutationVariables = Exact<{
+  input: InitializeTransactionInput;
+}>;
+
+export type InitializeTransactionMutation = {
+  __typename?: "Mutation";
+  initializeTransaction: {
+    __typename?: "InitializeTransactionResponse";
+    authorizationUrl: string;
+    accessCode: string;
+    reference: string;
+  };
 };
 
 export type MenuQueryVariables = Exact<{
-  qrCode: Scalars["String"]["input"];
+  id: Scalars["ID"]["input"];
 }>;
 
 export type MenuQuery = {
   __typename?: "Query";
-  menu: {
-    __typename?: "MenuResponse";
-    statusCode: number;
-    success: boolean;
-    message: string;
-    data?: {
-      __typename?: "Menu";
+  menu?: {
+    __typename?: "Menu";
+    id: string;
+    name: string;
+    items: Array<{
+      __typename?: "MenuItem";
       id: string;
       name: string;
-      qrCode: string;
-      items: Array<{
-        __typename?: "MenuItem";
-        id: string;
-        name: string;
-        description?: string | null;
-        price: number;
-        available: boolean;
-      }>;
-    } | null;
-  };
-};
-
-export type MenuByIdQueryVariables = Exact<{
-  id: Scalars["String"]["input"];
-}>;
-
-export type MenuByIdQuery = {
-  __typename?: "Query";
-  menuById: {
-    __typename?: "MenuResponse";
-    statusCode: number;
-    success: boolean;
-    message: string;
-    data?: {
-      __typename?: "Menu";
-      id: string;
-      name: string;
-      items: Array<{
-        __typename?: "MenuItem";
-        id: string;
-        name: string;
-        description?: string | null;
-        price: number;
-        available: boolean;
-      }>;
-    } | null;
-  };
+      description?: string | null;
+      price: number;
+      available: boolean;
+    }>;
+  } | null;
 };
 
 export type OrderQueryVariables = Exact<{
-  id: Scalars["String"]["input"];
+  id: Scalars["ID"]["input"];
 }>;
 
 export type OrderQuery = {
   __typename?: "Query";
-  order: {
-    __typename?: "OrderResponse";
-    statusCode: number;
-    success: boolean;
-    message: string;
-    data?: {
-      __typename?: "Order";
-      id: string;
-      total: number;
-      status: string;
-      items: Array<{
-        __typename?: "OrderItem";
-        quantity: number;
-        menuItem: { __typename?: "MenuItem"; name: string; price: number };
-      }>;
-      payment?: {
-        __typename?: "Payment";
-        amount: number;
-        status: string;
-      } | null;
-    } | null;
-  };
+  order?: {
+    __typename?: "Order";
+    id: string;
+    total: number;
+    status: string;
+    items: Array<{
+      __typename?: "OrderItem";
+      quantity: number;
+      menuItem: { __typename?: "MenuItem"; name: string; price: number };
+    }>;
+    payment?: { __typename?: "Payment"; amount: number; status: string } | null;
+  } | null;
+};
+
+export type OrderByReferenceQueryVariables = Exact<{
+  reference: Scalars["String"]["input"];
+}>;
+
+export type OrderByReferenceQuery = {
+  __typename?: "Query";
+  orderByReference?: {
+    __typename?: "Order";
+    id: string;
+    status: string;
+  } | null;
 };
 
 export type UpdateOrderStatusMutationVariables = Exact<{
-  id: Scalars["String"]["input"];
+  id: Scalars["ID"]["input"];
   status: Scalars["String"]["input"];
 }>;
 
 export type UpdateOrderStatusMutation = {
   __typename?: "Mutation";
-  updateOrderStatus: {
-    __typename?: "OrderResponse";
-    statusCode: number;
-    success: boolean;
-    message: string;
-    data?: { __typename?: "Order"; id: string; status: string } | null;
-  };
-};
-
-export type UpdatePaymentStatusMutationVariables = Exact<{
-  id: Scalars["String"]["input"];
-  status: Scalars["String"]["input"];
-}>;
-
-export type UpdatePaymentStatusMutation = {
-  __typename?: "Mutation";
-  updatePaymentStatus: {
-    __typename?: "PaymentResponse";
-    statusCode: number;
-    success: boolean;
-    message: string;
-    data?: { __typename?: "Payment"; id: string; status: string } | null;
-  };
+  updateOrderStatus: { __typename?: "Order"; id: string; status: string };
 };
 
 export const CreateOrderFromPaymentDocument = {
@@ -469,51 +435,33 @@ export const CreateOrderFromPaymentDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "statusCode" } },
-                { kind: "Field", name: { kind: "Name", value: "success" } },
-                { kind: "Field", name: { kind: "Name", value: "message" } },
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "total" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
                 {
                   kind: "Field",
-                  name: { kind: "Name", value: "data" },
+                  name: { kind: "Name", value: "items" },
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      { kind: "Field", name: { kind: "Name", value: "total" } },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "status" },
+                        name: { kind: "Name", value: "quantity" },
                       },
+                      { kind: "Field", name: { kind: "Name", value: "price" } },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "items" },
+                        name: { kind: "Name", value: "menuItem" },
                         selectionSet: {
                           kind: "SelectionSet",
                           selections: [
                             {
                               kind: "Field",
-                              name: { kind: "Name", value: "quantity" },
+                              name: { kind: "Name", value: "id" },
                             },
                             {
                               kind: "Field",
-                              name: { kind: "Name", value: "price" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "menuItem" },
-                              selectionSet: {
-                                kind: "SelectionSet",
-                                selections: [
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "id" },
-                                  },
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "name" },
-                                  },
-                                ],
-                              },
+                              name: { kind: "Name", value: "name" },
                             },
                           ],
                         },
@@ -532,13 +480,29 @@ export const CreateOrderFromPaymentDocument = {
   CreateOrderFromPaymentMutation,
   CreateOrderFromPaymentMutationVariables
 >;
-export const CreatePaymentIntentDocument = {
+export const HealthCheckDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "HealthCheck" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "healthCheck" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<HealthCheckQuery, HealthCheckQueryVariables>;
+export const InitializeTransactionDocument = {
   kind: "Document",
   definitions: [
     {
       kind: "OperationDefinition",
       operation: "mutation",
-      name: { kind: "Name", value: "CreatePaymentIntent" },
+      name: { kind: "Name", value: "InitializeTransaction" },
       variableDefinitions: [
         {
           kind: "VariableDefinition",
@@ -550,7 +514,7 @@ export const CreatePaymentIntentDocument = {
             kind: "NonNullType",
             type: {
               kind: "NamedType",
-              name: { kind: "Name", value: "CreatePaymentIntentInput" },
+              name: { kind: "Name", value: "InitializeTransactionInput" },
             },
           },
         },
@@ -560,7 +524,7 @@ export const CreatePaymentIntentDocument = {
         selections: [
           {
             kind: "Field",
-            name: { kind: "Name", value: "createPaymentIntent" },
+            name: { kind: "Name", value: "initializeTransaction" },
             arguments: [
               {
                 kind: "Argument",
@@ -574,26 +538,12 @@ export const CreatePaymentIntentDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "statusCode" } },
-                { kind: "Field", name: { kind: "Name", value: "success" } },
-                { kind: "Field", name: { kind: "Name", value: "message" } },
                 {
                   kind: "Field",
-                  name: { kind: "Name", value: "data" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "paymentIntentId" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "clientSecret" },
-                      },
-                    ],
-                  },
+                  name: { kind: "Name", value: "authorizationUrl" },
                 },
+                { kind: "Field", name: { kind: "Name", value: "accessCode" } },
+                { kind: "Field", name: { kind: "Name", value: "reference" } },
               ],
             },
           },
@@ -602,85 +552,9 @@ export const CreatePaymentIntentDocument = {
     },
   ],
 } as unknown as DocumentNode<
-  CreatePaymentIntentMutation,
-  CreatePaymentIntentMutationVariables
+  InitializeTransactionMutation,
+  InitializeTransactionMutationVariables
 >;
-export const CreateSetupIntentDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "CreateSetupIntent" },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "createSetupIntent" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "statusCode" } },
-                { kind: "Field", name: { kind: "Name", value: "success" } },
-                { kind: "Field", name: { kind: "Name", value: "message" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "data" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "setupIntentId" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "clientSecret" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "customerId" },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  CreateSetupIntentMutation,
-  CreateSetupIntentMutationVariables
->;
-export const HealthCheckDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "HealthCheck" },
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "healthCheck" },
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "status" } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<HealthCheckQuery, HealthCheckQueryVariables>;
 export const MenuDocument = {
   kind: "Document",
   definitions: [
@@ -691,16 +565,10 @@ export const MenuDocument = {
       variableDefinitions: [
         {
           kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "qrCode" },
-          },
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
           type: {
             kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
           },
         },
       ],
@@ -710,100 +578,6 @@ export const MenuDocument = {
           {
             kind: "Field",
             name: { kind: "Name", value: "menu" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "qrCode" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "qrCode" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "statusCode" } },
-                { kind: "Field", name: { kind: "Name", value: "success" } },
-                { kind: "Field", name: { kind: "Name", value: "message" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "data" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      { kind: "Field", name: { kind: "Name", value: "name" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "qrCode" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "items" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "id" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "name" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "description" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "price" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "available" },
-                            },
-                          ],
-                        },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<MenuQuery, MenuQueryVariables>;
-export const MenuByIdDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "query",
-      name: { kind: "Name", value: "MenuById" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "menuById" },
             arguments: [
               {
                 kind: "Argument",
@@ -817,12 +591,11 @@ export const MenuByIdDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "statusCode" } },
-                { kind: "Field", name: { kind: "Name", value: "success" } },
-                { kind: "Field", name: { kind: "Name", value: "message" } },
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
                 {
                   kind: "Field",
-                  name: { kind: "Name", value: "data" },
+                  name: { kind: "Name", value: "items" },
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
@@ -830,32 +603,12 @@ export const MenuByIdDocument = {
                       { kind: "Field", name: { kind: "Name", value: "name" } },
                       {
                         kind: "Field",
-                        name: { kind: "Name", value: "items" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "id" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "name" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "description" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "price" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "available" },
-                            },
-                          ],
-                        },
+                        name: { kind: "Name", value: "description" },
+                      },
+                      { kind: "Field", name: { kind: "Name", value: "price" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "available" },
                       },
                     ],
                   },
@@ -867,7 +620,7 @@ export const MenuByIdDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<MenuByIdQuery, MenuByIdQueryVariables>;
+} as unknown as DocumentNode<MenuQuery, MenuQueryVariables>;
 export const OrderDocument = {
   kind: "Document",
   definitions: [
@@ -881,10 +634,7 @@ export const OrderDocument = {
           variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
           type: {
             kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
           },
         },
       ],
@@ -907,67 +657,52 @@ export const OrderDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "statusCode" } },
-                { kind: "Field", name: { kind: "Name", value: "success" } },
-                { kind: "Field", name: { kind: "Name", value: "message" } },
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "total" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
                 {
                   kind: "Field",
-                  name: { kind: "Name", value: "data" },
+                  name: { kind: "Name", value: "items" },
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      { kind: "Field", name: { kind: "Name", value: "total" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "quantity" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "menuItem" },
+                        selectionSet: {
+                          kind: "SelectionSet",
+                          selections: [
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "name" },
+                            },
+                            {
+                              kind: "Field",
+                              name: { kind: "Name", value: "price" },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "payment" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "amount" },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "status" },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "items" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "menuItem" },
-                              selectionSet: {
-                                kind: "SelectionSet",
-                                selections: [
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "name" },
-                                  },
-                                  {
-                                    kind: "Field",
-                                    name: { kind: "Name", value: "price" },
-                                  },
-                                ],
-                              },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "quantity" },
-                            },
-                          ],
-                        },
-                      },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "payment" },
-                        selectionSet: {
-                          kind: "SelectionSet",
-                          selections: [
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "amount" },
-                            },
-                            {
-                              kind: "Field",
-                              name: { kind: "Name", value: "status" },
-                            },
-                          ],
-                        },
                       },
                     ],
                   },
@@ -980,6 +715,61 @@ export const OrderDocument = {
     },
   ],
 } as unknown as DocumentNode<OrderQuery, OrderQueryVariables>;
+export const OrderByReferenceDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "OrderByReference" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "reference" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "orderByReference" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "reference" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "reference" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  OrderByReferenceQuery,
+  OrderByReferenceQueryVariables
+>;
 export const UpdateOrderStatusDocument = {
   kind: "Document",
   definitions: [
@@ -993,10 +783,7 @@ export const UpdateOrderStatusDocument = {
           variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
           type: {
             kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
           },
         },
         {
@@ -1041,23 +828,8 @@ export const UpdateOrderStatusDocument = {
             selectionSet: {
               kind: "SelectionSet",
               selections: [
-                { kind: "Field", name: { kind: "Name", value: "statusCode" } },
-                { kind: "Field", name: { kind: "Name", value: "success" } },
-                { kind: "Field", name: { kind: "Name", value: "message" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "data" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "status" },
-                      },
-                    ],
-                  },
-                },
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "status" } },
               ],
             },
           },
@@ -1068,93 +840,4 @@ export const UpdateOrderStatusDocument = {
 } as unknown as DocumentNode<
   UpdateOrderStatusMutation,
   UpdateOrderStatusMutationVariables
->;
-export const UpdatePaymentStatusDocument = {
-  kind: "Document",
-  definitions: [
-    {
-      kind: "OperationDefinition",
-      operation: "mutation",
-      name: { kind: "Name", value: "UpdatePaymentStatus" },
-      variableDefinitions: [
-        {
-          kind: "VariableDefinition",
-          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
-          },
-        },
-        {
-          kind: "VariableDefinition",
-          variable: {
-            kind: "Variable",
-            name: { kind: "Name", value: "status" },
-          },
-          type: {
-            kind: "NonNullType",
-            type: {
-              kind: "NamedType",
-              name: { kind: "Name", value: "String" },
-            },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: "SelectionSet",
-        selections: [
-          {
-            kind: "Field",
-            name: { kind: "Name", value: "updatePaymentStatus" },
-            arguments: [
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "id" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "id" },
-                },
-              },
-              {
-                kind: "Argument",
-                name: { kind: "Name", value: "status" },
-                value: {
-                  kind: "Variable",
-                  name: { kind: "Name", value: "status" },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: "SelectionSet",
-              selections: [
-                { kind: "Field", name: { kind: "Name", value: "statusCode" } },
-                { kind: "Field", name: { kind: "Name", value: "success" } },
-                { kind: "Field", name: { kind: "Name", value: "message" } },
-                {
-                  kind: "Field",
-                  name: { kind: "Name", value: "data" },
-                  selectionSet: {
-                    kind: "SelectionSet",
-                    selections: [
-                      { kind: "Field", name: { kind: "Name", value: "id" } },
-                      {
-                        kind: "Field",
-                        name: { kind: "Name", value: "status" },
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  UpdatePaymentStatusMutation,
-  UpdatePaymentStatusMutationVariables
 >;

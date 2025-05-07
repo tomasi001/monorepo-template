@@ -1,23 +1,22 @@
-query Order($id: String!) {
+# Query order by ID
+query Order($id: ID!) {
+  # Use ID! type for id
   order(id: $id) {
-    statusCode
-    success
-    message
-    data {
-      id
-      total
+    # Expect Order type directly, no wrapper
+    id
+    total
+    status
+    items {
+      quantity
+      menuItem {
+        name
+        price
+      }
+    }
+    payment {
+      amount
       status
-      items {
-        menuItem {
-          name
-          price
-        }
-        quantity
-      }
-      payment {
-        amount
-        status
-      }
+      # paystackReference # Optionally include if needed
     }
   }
 }

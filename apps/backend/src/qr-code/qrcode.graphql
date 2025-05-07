@@ -1,0 +1,11 @@
+# --- QR Code Response Types ---
+type QrCodeResponse {
+  qrCodeUrl: String!
+  qrCodeDataUrl: String!
+}
+
+# --- QR Code Mutations ---
+extend type Mutation {
+  # QR Code Generation (Example - Might be internal or admin-only)
+  generateMenuQrCode(menuId: ID!): QrCodeResponse! # Requires auth
+}

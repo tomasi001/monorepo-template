@@ -1,19 +1,19 @@
-query Menu($qrCode: String!) {
-  menu(qrCode: $qrCode) {
-    statusCode
-    success
-    message
-    data {
+# Query menu by ID
+query Menu($id: ID!) {
+  # Use ID! type for id
+  # Query 'menu' field, not menuById
+  menu(id: $id) {
+    # Pass ID argument
+    # Expect Menu type directly, no wrapper
+    id
+    name
+    # qrCode # Removed qrCode field as it might not be needed in frontend display
+    items {
       id
       name
-      qrCode
-      items {
-        id
-        name
-        description
-        price
-        available
-      }
+      description
+      price
+      available
     }
   }
 }

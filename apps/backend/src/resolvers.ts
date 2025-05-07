@@ -1,41 +1,39 @@
-// apps/backend/src/resolvers.ts
-import type { Resolvers } from "./generated/graphql-types.js"; // Import generated types
+import { GraphQLError } from "graphql";
+import { Resolvers } from "./generated/graphql-types.js";
 import { ContextValue } from "./index.js"; // Import ContextValue
-import { menuResolver } from "./menu/resolvers/menu.resolver.js";
-import { orderResolver } from "./order/resolvers/order.resolver.js";
-import { paymentResolver } from "./payment/resolvers/payment.resolver.js";
-import { qrCodeResolver } from "./qr-code/qr-code.resolver.js"; // Import the new resolver
+
+import { adminResolvers } from "./admin/admin.resolver.js";
+import { menuResolvers } from "./menu/menu.resolver.js";
+import { orderResolvers } from "./order/order.resolver.js";
+import { paymentResolvers } from "./payment/payment.resolver.js";
 
 // Provide resolver functions for your schema fields
 const resolvers: Resolvers<ContextValue> = {
   Query: {
     healthCheck: async (
-      _parent: unknown, // Typically unused, type as unknown or use specific parent type if needed
-      _args: Record<string, never>, // Assuming no arguments for healthCheck, use {} or specific args type
-      context: ContextValue // Use the imported ContextValue
-    ): Promise<{ status: string }> => {
-      // Explicit return type
-      // Example: Perform a quick DB check
+      _parent: unknown,
+      _args: Record<string, never>,
+      { prisma }: ContextValue
+    ): Promise<string> => {
       try {
-        await context.prisma.healthCheck.create({
-          data: { status: "OK" },
-        });
-        return { status: "OK" };
+        await prisma.$queryRaw`SELECT 1`;
+        return "OK";
       } catch (error) {
-        console.error("Health check DB write failed:", error);
-        // In a real app, you might want to return a more specific error type
-        // For now, we signal failure with a specific status string.
-        return { status: "Error connecting to DB" };
+        console.error("Health check DB query failed:", error);
+        throw new GraphQLError("Database connection failed", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
       }
     },
-    ...menuResolver.Query,
-    ...orderResolver.Query,
-    ...qrCodeResolver.Query, // Add QR code query
+    ...menuResolvers.Query,
+    ...orderResolvers.Query,
+    ...adminResolvers.Query,
   },
   Mutation: {
-    ...menuResolver.Mutation,
-    ...paymentResolver.Mutation, // Includes createSetupIntent now
-    ...orderResolver.Mutation,
+    ...menuResolvers.Mutation,
+    ...orderResolvers.Mutation,
+    ...paymentResolvers.Mutation,
+    ...adminResolvers.Mutation,
   },
 };
 

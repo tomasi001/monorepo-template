@@ -14,35 +14,28 @@ import { TypedDocumentNode as DocumentNode } from "@graphql-typed-document-node/
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
-  "mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {\n  createOrderFromPayment(input: $input) {\n    statusCode\n    success\n    message\n    data {\n      id\n      total\n      status\n      items {\n        quantity\n        price\n        menuItem {\n          id\n          name\n        }\n      }\n    }\n  }\n}": typeof types.CreateOrderFromPaymentDocument;
-  "mutation CreatePaymentIntent($input: CreatePaymentIntentInput!) {\n  createPaymentIntent(input: $input) {\n    statusCode\n    success\n    message\n    data {\n      paymentIntentId\n      clientSecret\n    }\n  }\n}": typeof types.CreatePaymentIntentDocument;
-  "mutation CreateSetupIntent {\n  createSetupIntent {\n    statusCode\n    success\n    message\n    data {\n      setupIntentId\n      clientSecret\n      customerId\n    }\n  }\n}": typeof types.CreateSetupIntentDocument;
-  "query HealthCheck {\n  healthCheck {\n    status\n  }\n}": typeof types.HealthCheckDocument;
-  "query Menu($qrCode: String!) {\n  menu(qrCode: $qrCode) {\n    statusCode\n    success\n    message\n    data {\n      id\n      name\n      qrCode\n      items {\n        id\n        name\n        description\n        price\n        available\n      }\n    }\n  }\n}": typeof types.MenuDocument;
-  "query MenuById($id: String!) {\n  menuById(id: $id) {\n    statusCode\n    success\n    message\n    data {\n      id\n      name\n      items {\n        id\n        name\n        description\n        price\n        available\n      }\n    }\n  }\n}": typeof types.MenuByIdDocument;
-  "query Order($id: String!) {\n  order(id: $id) {\n    statusCode\n    success\n    message\n    data {\n      id\n      total\n      status\n      items {\n        menuItem {\n          name\n          price\n        }\n        quantity\n      }\n      payment {\n        amount\n        status\n      }\n    }\n  }\n}": typeof types.OrderDocument;
-  "mutation UpdateOrderStatus($id: String!, $status: String!) {\n  updateOrderStatus(id: $id, status: $status) {\n    statusCode\n    success\n    message\n    data {\n      id\n      status\n    }\n  }\n}": typeof types.UpdateOrderStatusDocument;
-  "mutation UpdatePaymentStatus($id: String!, $status: String!) {\n  updatePaymentStatus(id: $id, status: $status) {\n    statusCode\n    success\n    message\n    data {\n      id\n      status\n    }\n  }\n}": typeof types.UpdatePaymentStatusDocument;
+  "mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {\n  createOrderFromPayment(input: $input) {\n    id\n    total\n    status\n    items {\n      quantity\n      price\n      menuItem {\n        id\n        name\n      }\n    }\n  }\n}": typeof types.CreateOrderFromPaymentDocument;
+  "query HealthCheck {\n  healthCheck\n}": typeof types.HealthCheckDocument;
+  "mutation InitializeTransaction($input: InitializeTransactionInput!) {\n  initializeTransaction(input: $input) {\n    authorizationUrl\n    accessCode\n    reference\n  }\n}": typeof types.InitializeTransactionDocument;
+  "query Menu($id: ID!) {\n  menu(id: $id) {\n    id\n    name\n    items {\n      id\n      name\n      description\n      price\n      available\n    }\n  }\n}": typeof types.MenuDocument;
+  "query Order($id: ID!) {\n  order(id: $id) {\n    id\n    total\n    status\n    items {\n      quantity\n      menuItem {\n        name\n        price\n      }\n    }\n    payment {\n      amount\n      status\n    }\n  }\n}": typeof types.OrderDocument;
+  "query OrderByReference($reference: String!) {\n  orderByReference(reference: $reference) {\n    id\n    status\n  }\n}": typeof types.OrderByReferenceDocument;
+  "mutation UpdateOrderStatus($id: ID!, $status: String!) {\n  updateOrderStatus(id: $id, status: $status) {\n    id\n    status\n  }\n}": typeof types.UpdateOrderStatusDocument;
 };
 const documents: Documents = {
-  "mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {\n  createOrderFromPayment(input: $input) {\n    statusCode\n    success\n    message\n    data {\n      id\n      total\n      status\n      items {\n        quantity\n        price\n        menuItem {\n          id\n          name\n        }\n      }\n    }\n  }\n}":
+  "mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {\n  createOrderFromPayment(input: $input) {\n    id\n    total\n    status\n    items {\n      quantity\n      price\n      menuItem {\n        id\n        name\n      }\n    }\n  }\n}":
     types.CreateOrderFromPaymentDocument,
-  "mutation CreatePaymentIntent($input: CreatePaymentIntentInput!) {\n  createPaymentIntent(input: $input) {\n    statusCode\n    success\n    message\n    data {\n      paymentIntentId\n      clientSecret\n    }\n  }\n}":
-    types.CreatePaymentIntentDocument,
-  "mutation CreateSetupIntent {\n  createSetupIntent {\n    statusCode\n    success\n    message\n    data {\n      setupIntentId\n      clientSecret\n      customerId\n    }\n  }\n}":
-    types.CreateSetupIntentDocument,
-  "query HealthCheck {\n  healthCheck {\n    status\n  }\n}":
-    types.HealthCheckDocument,
-  "query Menu($qrCode: String!) {\n  menu(qrCode: $qrCode) {\n    statusCode\n    success\n    message\n    data {\n      id\n      name\n      qrCode\n      items {\n        id\n        name\n        description\n        price\n        available\n      }\n    }\n  }\n}":
+  "query HealthCheck {\n  healthCheck\n}": types.HealthCheckDocument,
+  "mutation InitializeTransaction($input: InitializeTransactionInput!) {\n  initializeTransaction(input: $input) {\n    authorizationUrl\n    accessCode\n    reference\n  }\n}":
+    types.InitializeTransactionDocument,
+  "query Menu($id: ID!) {\n  menu(id: $id) {\n    id\n    name\n    items {\n      id\n      name\n      description\n      price\n      available\n    }\n  }\n}":
     types.MenuDocument,
-  "query MenuById($id: String!) {\n  menuById(id: $id) {\n    statusCode\n    success\n    message\n    data {\n      id\n      name\n      items {\n        id\n        name\n        description\n        price\n        available\n      }\n    }\n  }\n}":
-    types.MenuByIdDocument,
-  "query Order($id: String!) {\n  order(id: $id) {\n    statusCode\n    success\n    message\n    data {\n      id\n      total\n      status\n      items {\n        menuItem {\n          name\n          price\n        }\n        quantity\n      }\n      payment {\n        amount\n        status\n      }\n    }\n  }\n}":
+  "query Order($id: ID!) {\n  order(id: $id) {\n    id\n    total\n    status\n    items {\n      quantity\n      menuItem {\n        name\n        price\n      }\n    }\n    payment {\n      amount\n      status\n    }\n  }\n}":
     types.OrderDocument,
-  "mutation UpdateOrderStatus($id: String!, $status: String!) {\n  updateOrderStatus(id: $id, status: $status) {\n    statusCode\n    success\n    message\n    data {\n      id\n      status\n    }\n  }\n}":
+  "query OrderByReference($reference: String!) {\n  orderByReference(reference: $reference) {\n    id\n    status\n  }\n}":
+    types.OrderByReferenceDocument,
+  "mutation UpdateOrderStatus($id: ID!, $status: String!) {\n  updateOrderStatus(id: $id, status: $status) {\n    id\n    status\n  }\n}":
     types.UpdateOrderStatusDocument,
-  "mutation UpdatePaymentStatus($id: String!, $status: String!) {\n  updatePaymentStatus(id: $id, status: $status) {\n    statusCode\n    success\n    message\n    data {\n      id\n      status\n    }\n  }\n}":
-    types.UpdatePaymentStatusDocument,
 };
 
 /**
@@ -63,56 +56,44 @@ export function graphql(source: string): unknown;
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {\n  createOrderFromPayment(input: $input) {\n    statusCode\n    success\n    message\n    data {\n      id\n      total\n      status\n      items {\n        quantity\n        price\n        menuItem {\n          id\n          name\n        }\n      }\n    }\n  }\n}"
-): (typeof documents)["mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {\n  createOrderFromPayment(input: $input) {\n    statusCode\n    success\n    message\n    data {\n      id\n      total\n      status\n      items {\n        quantity\n        price\n        menuItem {\n          id\n          name\n        }\n      }\n    }\n  }\n}"];
+  source: "mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {\n  createOrderFromPayment(input: $input) {\n    id\n    total\n    status\n    items {\n      quantity\n      price\n      menuItem {\n        id\n        name\n      }\n    }\n  }\n}"
+): (typeof documents)["mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {\n  createOrderFromPayment(input: $input) {\n    id\n    total\n    status\n    items {\n      quantity\n      price\n      menuItem {\n        id\n        name\n      }\n    }\n  }\n}"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "mutation CreatePaymentIntent($input: CreatePaymentIntentInput!) {\n  createPaymentIntent(input: $input) {\n    statusCode\n    success\n    message\n    data {\n      paymentIntentId\n      clientSecret\n    }\n  }\n}"
-): (typeof documents)["mutation CreatePaymentIntent($input: CreatePaymentIntentInput!) {\n  createPaymentIntent(input: $input) {\n    statusCode\n    success\n    message\n    data {\n      paymentIntentId\n      clientSecret\n    }\n  }\n}"];
+  source: "query HealthCheck {\n  healthCheck\n}"
+): (typeof documents)["query HealthCheck {\n  healthCheck\n}"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "mutation CreateSetupIntent {\n  createSetupIntent {\n    statusCode\n    success\n    message\n    data {\n      setupIntentId\n      clientSecret\n      customerId\n    }\n  }\n}"
-): (typeof documents)["mutation CreateSetupIntent {\n  createSetupIntent {\n    statusCode\n    success\n    message\n    data {\n      setupIntentId\n      clientSecret\n      customerId\n    }\n  }\n}"];
+  source: "mutation InitializeTransaction($input: InitializeTransactionInput!) {\n  initializeTransaction(input: $input) {\n    authorizationUrl\n    accessCode\n    reference\n  }\n}"
+): (typeof documents)["mutation InitializeTransaction($input: InitializeTransactionInput!) {\n  initializeTransaction(input: $input) {\n    authorizationUrl\n    accessCode\n    reference\n  }\n}"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "query HealthCheck {\n  healthCheck {\n    status\n  }\n}"
-): (typeof documents)["query HealthCheck {\n  healthCheck {\n    status\n  }\n}"];
+  source: "query Menu($id: ID!) {\n  menu(id: $id) {\n    id\n    name\n    items {\n      id\n      name\n      description\n      price\n      available\n    }\n  }\n}"
+): (typeof documents)["query Menu($id: ID!) {\n  menu(id: $id) {\n    id\n    name\n    items {\n      id\n      name\n      description\n      price\n      available\n    }\n  }\n}"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "query Menu($qrCode: String!) {\n  menu(qrCode: $qrCode) {\n    statusCode\n    success\n    message\n    data {\n      id\n      name\n      qrCode\n      items {\n        id\n        name\n        description\n        price\n        available\n      }\n    }\n  }\n}"
-): (typeof documents)["query Menu($qrCode: String!) {\n  menu(qrCode: $qrCode) {\n    statusCode\n    success\n    message\n    data {\n      id\n      name\n      qrCode\n      items {\n        id\n        name\n        description\n        price\n        available\n      }\n    }\n  }\n}"];
+  source: "query Order($id: ID!) {\n  order(id: $id) {\n    id\n    total\n    status\n    items {\n      quantity\n      menuItem {\n        name\n        price\n      }\n    }\n    payment {\n      amount\n      status\n    }\n  }\n}"
+): (typeof documents)["query Order($id: ID!) {\n  order(id: $id) {\n    id\n    total\n    status\n    items {\n      quantity\n      menuItem {\n        name\n        price\n      }\n    }\n    payment {\n      amount\n      status\n    }\n  }\n}"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "query MenuById($id: String!) {\n  menuById(id: $id) {\n    statusCode\n    success\n    message\n    data {\n      id\n      name\n      items {\n        id\n        name\n        description\n        price\n        available\n      }\n    }\n  }\n}"
-): (typeof documents)["query MenuById($id: String!) {\n  menuById(id: $id) {\n    statusCode\n    success\n    message\n    data {\n      id\n      name\n      items {\n        id\n        name\n        description\n        price\n        available\n      }\n    }\n  }\n}"];
+  source: "query OrderByReference($reference: String!) {\n  orderByReference(reference: $reference) {\n    id\n    status\n  }\n}"
+): (typeof documents)["query OrderByReference($reference: String!) {\n  orderByReference(reference: $reference) {\n    id\n    status\n  }\n}"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(
-  source: "query Order($id: String!) {\n  order(id: $id) {\n    statusCode\n    success\n    message\n    data {\n      id\n      total\n      status\n      items {\n        menuItem {\n          name\n          price\n        }\n        quantity\n      }\n      payment {\n        amount\n        status\n      }\n    }\n  }\n}"
-): (typeof documents)["query Order($id: String!) {\n  order(id: $id) {\n    statusCode\n    success\n    message\n    data {\n      id\n      total\n      status\n      items {\n        menuItem {\n          name\n          price\n        }\n        quantity\n      }\n      payment {\n        amount\n        status\n      }\n    }\n  }\n}"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: "mutation UpdateOrderStatus($id: String!, $status: String!) {\n  updateOrderStatus(id: $id, status: $status) {\n    statusCode\n    success\n    message\n    data {\n      id\n      status\n    }\n  }\n}"
-): (typeof documents)["mutation UpdateOrderStatus($id: String!, $status: String!) {\n  updateOrderStatus(id: $id, status: $status) {\n    statusCode\n    success\n    message\n    data {\n      id\n      status\n    }\n  }\n}"];
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(
-  source: "mutation UpdatePaymentStatus($id: String!, $status: String!) {\n  updatePaymentStatus(id: $id, status: $status) {\n    statusCode\n    success\n    message\n    data {\n      id\n      status\n    }\n  }\n}"
-): (typeof documents)["mutation UpdatePaymentStatus($id: String!, $status: String!) {\n  updatePaymentStatus(id: $id, status: $status) {\n    statusCode\n    success\n    message\n    data {\n      id\n      status\n    }\n  }\n}"];
+  source: "mutation UpdateOrderStatus($id: ID!, $status: String!) {\n  updateOrderStatus(id: $id, status: $status) {\n    id\n    status\n  }\n}"
+): (typeof documents)["mutation UpdateOrderStatus($id: ID!, $status: String!) {\n  updateOrderStatus(id: $id, status: $status) {\n    id\n    status\n  }\n}"];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

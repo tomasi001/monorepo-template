@@ -13,8 +13,7 @@
   },
   "dependencies": {
     "@packages/ui": "*",
-    "@stripe/react-stripe-js": "^3.6.0",
-    "@stripe/stripe-js": "^7.2.0",
+    "@paystack/inline-js": "^2.22.3",
     "@tanstack/react-query": "^5.0.0",
     "graphql": "^16.8.0",
     "graphql-request": "^7.1.2",

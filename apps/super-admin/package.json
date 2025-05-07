@@ -1,0 +1,49 @@
+{
+  "name": "@apps/super-admin",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "generate": "graphql-codegen --config codegen.ts",
+    "clean": "rimraf dist .turbo node_modules .vite"
+  },
+  "dependencies": {
+    "@packages/ui": "*",
+    "@tanstack/react-query": "^5.0.0",
+    "graphql": "^16.8.0",
+    "graphql-request": "^7.1.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "wouter": "^3.7.0"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "latest",
+    "@graphql-codegen/client-preset": "latest",
+    "@packages/eslint-config-custom": "*",
+    "@packages/tsconfig": "*",
+    "@tailwindcss/vite": "^4.1.4",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@types/wouter": "^2.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.31.0",
+    "@typescript-eslint/parser": "^8.31.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.25.1",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "globals": "latest",
+    "postcss": "^8.5.3",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^4.1.4",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.2",
+    "typescript-eslint": "latest",
+    "vite": "^6.3.3"
+  }
+}

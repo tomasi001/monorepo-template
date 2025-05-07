@@ -22,14 +22,17 @@
     "db:migrate:dev": "turbo run db:migrate:dev",
     "db:generate": "turbo run db:generate",
     "db:studio": "set -o allexport; source .env; set +o allexport && yarn db:generate && turbo run db:studio",
-    "db:seed": "set -o allexport; source .env; set +o allexport && yarn db:generate && turbo run db:seed"
+    "db:seed": "set -o allexport; source .env; set +o allexport && yarn db:generate && turbo run db:seed",
+    "dev:backend": "turbo run dev --filter=@qr-menu/backend",
+    "dev:frontend": "turbo run dev --filter=@qr-menu/frontend",
+    "dev:super-admin": "turbo run dev --filter=@qr-menu/super-admin"
   },
   "devDependencies": {
     "@packages/eslint-config-custom": "*",
     "@packages/tsconfig": "*",
     "eslint": "^9.25.1",
     "prettier": "^3.5.3",
-    "rimraf": "^6.0.1",
+    "rimraf": "^5.0.0",
     "turbo": "^2.5.1",
     "typescript": "^5.8.3"
   },

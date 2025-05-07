@@ -1,0 +1,62 @@
+# --- Menu Object Types ---
+type Menu {
+  id: ID!
+  name: String!
+  qrCode: String!
+  qrCodeDataUrl: String!
+  items: [MenuItem!]!
+  orders: [Order!]! # Reference to Order type (defined in order.graphql)
+  createdAt: String!
+  updatedAt: String!
+}
+
+type MenuItem {
+  id: ID!
+  menuId: ID!
+  name: String!
+  description: String
+  price: Float!
+  available: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# --- Menu Input Types ---
+input CreateMenuInput {
+  name: String!
+  qrCode: String! # Matches Menu type field
+}
+
+input UpdateMenuInput {
+  name: String
+}
+
+input CreateMenuItemInput {
+  name: String!
+  description: String
+  price: Float!
+  available: Boolean
+}
+
+input UpdateMenuItemInput {
+  name: String
+  description: String
+  price: Float
+  available: Boolean
+}
+
+# --- Menu Queries ---
+extend type Query {
+  menu(id: ID!): Menu
+  menus: [Menu!]!
+}
+
+# --- Menu Mutations ---
+extend type Mutation {
+  createMenu(input: CreateMenuInput!): Menu!
+  updateMenu(id: ID!, input: UpdateMenuInput!): Menu!
+  deleteMenu(id: ID!): Menu!
+  addMenuItem(menuId: ID!, input: CreateMenuItemInput!): MenuItem!
+  updateMenuItem(id: ID!, input: UpdateMenuItemInput!): MenuItem!
+  deleteMenuItem(id: ID!): MenuItem!
+}

@@ -1,6 +1,6 @@
 # apps/frontend/src/graphql/healthCheck.graphql
+# Simple health check query
 query HealthCheck {
-  healthCheck {
-    status
-  }
+  # Just query the field itself, no sub-selection needed for String!
+  healthCheck
 }

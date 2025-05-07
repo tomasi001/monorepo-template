@@ -1,6 +1,5 @@
-import { QrCodeService } from "./qr-code.service.js";
-import { ContextValue } from "../index.js"; // Assuming ContextValue is exported from index
 import { AppError } from "../common/errors/errors.js";
+import { ContextValue } from "../index.js"; // Assuming ContextValue is exported from index
 
 // Define the response structure for the GraphQL query
 interface QrCodeResponse {

@@ -1,27 +1,17 @@
+# Uses correct input type with paystackReference
 mutation CreateOrderFromPayment($input: CreateOrderFromPaymentInput!) {
+  # Expects Order directly, not a wrapper
   createOrderFromPayment(input: $input) {
-    statusCode
-    success
-    message
-    # Request the order data needed by the frontend upon success
-    data {
-      id
-      total
-      status
-      items {
-        quantity
-        price
-        menuItem {
-          id
-          name
-        }
+    id
+    total
+    status
+    items {
+      quantity
+      price # Price at time of order
+      menuItem {
+        id
+        name
       }
-      # Include payment details if needed
-      # payment {
-      #   id
-      #   status
-      #   amount
-      # }
     }
   }
 }

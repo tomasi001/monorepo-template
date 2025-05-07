@@ -1,30 +1,14 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "wouter";
-import { gqlClient } from "../lib/react-query";
-import { OrderDocument, OrderQuery } from "../generated/graphql/graphql";
-import { Button } from "@packages/ui"; // Assuming Button is exported from ui package
-
-// Interface matching the relevant parts of the Order type from GraphQL
-interface ReceiptOrderItem {
-  quantity: number;
-  menuItem: {
-    name: string;
-    price: number;
-  };
-}
-
-interface ReceiptOrder {
-  id: string;
-  total: number;
-  status: string;
-  items: ReceiptOrderItem[];
-  // Add other fields if needed, e.g., createdAt, payment status
-}
+import { gqlClient } from "@/lib/react-query";
+import {
+  OrderDocument,
+  OrderQuery /*, Order*/,
+} from "../generated/graphql/graphql";
+import { Button } from "@packages/ui";
 
 export const OrderReceipt: React.FC = () => {
-  // Use useParams hook if OrderReceipt is directly rendered by Route
-  // Or accept orderId as a prop if rendered by a wrapper component
   const params = useParams();
   const orderId = params?.orderId;
 
@@ -32,20 +16,12 @@ export const OrderReceipt: React.FC = () => {
     data: orderData,
     isLoading,
     error,
-  } = useQuery<OrderQuery, Error, ReceiptOrder | null>({
+  } = useQuery<OrderQuery, Error, OrderQuery["order"] | null>({
     queryKey: ["order", orderId],
-    queryFn: () => gqlClient.request(OrderDocument, { id: orderId! }), // Add non-null assertion or handle undefined case
+    queryFn: () => gqlClient.request(OrderDocument, { id: orderId! }),
     enabled: !!orderId,
     select: (data) => {
-      if (data?.order.success && data.order.data) {
-        // Basic validation/mapping (expand as needed)
-        return data.order.data as ReceiptOrder;
-      }
-      // Handle error case from backend response
-      if (data && !data.order.success) {
-        console.error("Failed to fetch order:", data.order.message);
-      }
-      return null;
+      return data?.order ?? null;
     },
     staleTime: Infinity,
     gcTime: Infinity,
@@ -76,7 +52,6 @@ export const OrderReceipt: React.FC = () => {
       </p>
     );
   }
-  console.log(orderData);
 
   // Simple receipt styling
   return (

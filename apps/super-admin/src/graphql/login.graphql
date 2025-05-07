@@ -1,0 +1,19 @@
+# Mutation for admin login
+mutation LoginAdmin($email: String!, $password: String!) {
+  loginAdmin(input: { email: $email, password: $password }) {
+    # Remove wrapper fields if mutation returns LoginAdminResponse directly
+    # statusCode
+    # success
+    # message
+    # data {
+    token
+    admin {
+      id
+      email
+      role
+      # createdAt # Removed if not needed
+      # updatedAt # Removed if not needed
+    }
+    # }
+  }
+}

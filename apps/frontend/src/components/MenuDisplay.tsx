@@ -1,318 +1,191 @@
+import React, { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button, Card, CardContent, Input } from "@packages/ui";
-import { useStripe } from "@stripe/react-stripe-js";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import React, { useMemo, useState } from "react";
+import Paystack from "@paystack/inline-js";
+import { MenuDocument, MenuQuery } from "../generated/graphql/graphql";
+import { gqlClient } from "@/lib/react-query";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
-import {
-  CreateOrderFromPaymentDocument,
-  CreateOrderFromPaymentMutation,
-  CreateOrderFromPaymentMutationVariables,
-  CreatePaymentIntentDocument,
-  CreatePaymentIntentMutation,
-  CreatePaymentIntentMutationVariables,
-  CreateSetupIntentDocument,
-  CreateSetupIntentMutation,
-  Menu as GqlMenu,
-  MenuByIdDocument,
-  MenuByIdQuery,
-} from "../generated/graphql/graphql";
-import { gqlClient } from "../lib/react-query";
-import { Receipt } from "./Receipt";
-import { StripePaymentForm } from "./StripePaymentForm";
-
-interface MenuItem {
-  id: string;
-  name: string;
-  description?: string | null; // Allow null based on schema generation
-  price: number;
-  available: boolean;
-}
-
-interface Menu {
-  id: string;
-  name: string;
-  items: MenuItem[];
-}
 
 interface MenuDisplayProps {
   menuId: string;
-  onOrderPlaced: (orderId: string, total: number) => void;
 }
 
-function isValidMenu(data: unknown): data is GqlMenu {
-  return (
-    typeof data === "object" &&
-    data !== null &&
-    "id" in data &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    typeof (data as any).id === "string" &&
-    "name" in data &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    typeof (data as any).name === "string" &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    "items" in data &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Array.isArray((data as any).items)
-  );
-}
+type Quantities = Record<string, number>;
 
 export const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuId }) => {
-  const stripe = useStripe();
+  const [quantities, setQuantities] = useState<Quantities>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [, navigate] = useLocation();
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [isReviewingPayment, setIsReviewingPayment] = useState(false);
-  const [savedPaymentMethodId, setSavedPaymentMethodId] = useState<
-    string | null
-  >(null);
-  const [customerId, setCustomerId] = useState<string | null>(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const {
-    data: menuQueryResult,
-    isLoading,
-    error,
-  } = useQuery<MenuByIdQuery, Error, Menu | null>({
-    queryKey: ["menuById", menuId],
-    queryFn: () => gqlClient.request(MenuByIdDocument, { id: menuId }),
+    data: menu,
+    isLoading: menuLoading,
+    error: menuError,
+  } = useQuery<MenuQuery, Error, MenuQuery["menu"] | null>({
+    queryKey: ["menu", menuId],
+    queryFn: () => gqlClient.request(MenuDocument, { id: menuId }),
+    select: (data) => data?.menu ?? null,
     enabled: !!menuId,
-    select: (data): Menu | null => {
-      if (
-        data?.menuById.success &&
-        data.menuById.data &&
-        isValidMenu(data.menuById.data)
-      ) {
-        return data.menuById.data as Menu;
-      } else if (data && !data.menuById.success) {
-        toast.error("Failed to load menu", {
-          description: data.menuById.message,
-        });
-      }
-      return null;
-    },
     staleTime: 5 * 60 * 1000,
   });
 
-  const currentTotal = useMemo(() => {
-    if (!menuQueryResult) return 0;
-    return menuQueryResult.items.reduce((total, item) => {
-      return total + (quantities[item.id] || 0) * item.price;
+  const handleQuantityChange = (itemId: string, value: string | number) => {
+    const quantity =
+      typeof value === "string" ? parseInt(value, 10) || 0 : value;
+    setQuantities((prev) => {
+      const newQuantities = { ...prev };
+      if (quantity > 0) {
+        newQuantities[itemId] = quantity;
+      } else {
+        delete newQuantities[itemId];
+      }
+      return newQuantities;
+    });
+  };
+
+  const calculateTotal = () => {
+    if (!menu?.items) return 0;
+    type ItemType = NonNullable<MenuQuery["menu"]>["items"][number];
+    return Object.entries(quantities).reduce((total, [itemId, quantity]) => {
+      const item = menu.items.find((i: ItemType) => i.id === itemId);
+      const price = item?.price ?? 0;
+      return total + price * quantity;
     }, 0);
-  }, [quantities, menuQueryResult]);
-
-  const createSetupIntentMutation = useMutation<
-    CreateSetupIntentMutation,
-    Error,
-    Record<string, never>
-  >({
-    mutationFn: () => gqlClient.request(CreateSetupIntentDocument, {}),
-  });
-
-  const createPaymentIntentMutation = useMutation<
-    CreatePaymentIntentMutation,
-    Error,
-    CreatePaymentIntentMutationVariables
-  >({
-    mutationFn: (variables) =>
-      gqlClient.request(CreatePaymentIntentDocument, variables),
-  });
-
-  const createOrderFromPaymentMutation = useMutation<
-    CreateOrderFromPaymentMutation,
-    Error,
-    CreateOrderFromPaymentMutationVariables
-  >({
-    mutationFn: (variables) =>
-      gqlClient.request(CreateOrderFromPaymentDocument, variables),
-  });
-
-  const handleQuantityChange = (itemId: string, value: number | string) => {
-    let quantity: number;
-    if (typeof value === "string") {
-      quantity = parseInt(value) || 0;
-    } else {
-      quantity = value;
-    }
-    const newQuantity = Math.max(0, quantity);
-    setQuantities((prev) => ({ ...prev, [itemId]: newQuantity }));
   };
 
-  const handleReviewAndPay = () => {
-    const items = Object.entries(quantities)
-      .filter(([_, quantity]) => quantity > 0)
-      .map(([menuItemId, quantity]) => ({ menuItemId, quantity }));
+  const handlePlaceOrder = async () => {
+    setIsSubmitting(true);
+    setPaymentError(null);
+    const totalAmount = calculateTotal();
 
-    if (items.length === 0) {
-      toast.error("No Items Selected", {
-        description: "Please add items to your order.",
-      });
-      return;
-    }
-    setIsReviewingPayment(true);
-  };
-
-  const handleCardSetupSuccess = (
-    paymentMethodId: string,
-    setupIntentCustomerId: string
-  ) => {
-    setSavedPaymentMethodId(paymentMethodId);
-    setCustomerId(setupIntentCustomerId);
-  };
-
-  const handlePayNow = async () => {
-    if (!stripe) {
-      toast.error("Stripe Error", { description: "Stripe not initialized." });
-      return;
-    }
-    if (!savedPaymentMethodId) {
-      toast.error("Payment Error", {
-        description: "Card details have not been confirmed.",
-      });
-      return;
-    }
-    if (currentTotal <= 0) {
-      toast.error("Payment Error", { description: "Cannot pay $0.00." });
-      return;
-    }
-    if (!customerId) {
-      toast.error("Payment Error", {
-        description: "Customer information is missing.",
-      });
+    if (totalAmount <= 0) {
+      toast.error("Cannot place empty order.");
+      setIsSubmitting(false);
       return;
     }
 
-    setIsProcessingPayment(true);
-    let paymentIntentClientSecret: string | null = null;
+    const userEmail = "customer@example.com";
+    const userName = "Test Customer";
+    const currency = "ZAR";
 
     try {
-      const piResult = await createPaymentIntentMutation.mutateAsync({
-        input: {
-          amount: currentTotal,
-          currency: "usd",
-          customerId: customerId,
-        },
-      });
+      const paystackPublicKey =
+        import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ?? "YOUR_FALLBACK_PUBLIC_KEY";
+      console.log("Using Paystack Public Key:", paystackPublicKey);
 
-      if (
-        !piResult.createPaymentIntent.success ||
-        !piResult.createPaymentIntent.data?.clientSecret
-      ) {
-        throw new Error(
-          piResult.createPaymentIntent.message ||
-            "Failed to create payment intent."
-        );
-      }
-      paymentIntentClientSecret =
-        piResult.createPaymentIntent.data.clientSecret;
-
-      const { error: confirmError, paymentIntent } =
-        await stripe.confirmCardPayment(paymentIntentClientSecret, {
-          payment_method: savedPaymentMethodId,
-        });
-
-      if (confirmError) {
-        throw new Error(
-          confirmError.message || "Failed to confirm card payment."
-        );
-      }
-
-      if (paymentIntent?.status !== "succeeded") {
-        throw new Error(
-          `Payment not successful. Status: ${paymentIntent?.status}`
-        );
-      }
-
-      const orderResult = await createOrderFromPaymentMutation.mutateAsync({
-        input: {
-          paymentIntentId: paymentIntent.id,
+      const paystackOptions = {
+        key: paystackPublicKey,
+        email: userEmail,
+        amount: totalAmount * 100,
+        currency: currency,
+        ref: `order_${menuId}_${Date.now()}`,
+        metadata: {
           menuId: menuId,
-          items: Object.entries(quantities)
-            .filter(([, q]) => q > 0)
-            .map(([id, q]) => ({ menuItemId: id, quantity: q })),
+          items: Object.entries(quantities).map(([itemId, quantity]) => ({
+            menuItemId: itemId,
+            quantity: quantity,
+          })),
+          customerName: userName,
         },
-      });
+        onSuccess: async (transaction: { reference: string }) => {
+          console.log(
+            "Paystack onSuccess callback triggered. Reference:",
+            transaction.reference
+          );
+          toast.info("Payment Successful! Processing your order...");
 
-      if (
-        !orderResult.createOrderFromPayment.success ||
-        !orderResult.createOrderFromPayment.data
-      ) {
-        toast.error("Order Creation Failed After Payment", {
-          description:
-            orderResult.createOrderFromPayment.message ||
-            "Please contact support.",
-        });
-        setIsProcessingPayment(false);
-        return;
+          console.log(
+            `Redirecting to order confirmation for ref: ${transaction.reference}`
+          );
+          navigate(`/order/processing/${transaction.reference}`);
+        },
+        onCancel: () => {
+          toast.info("Payment Cancelled", {
+            description: "You cancelled the payment process.",
+          });
+          setIsSubmitting(false);
+        },
+        onError: (error: Error) => {
+          console.error("Paystack Inline Error:", error);
+          toast.error("Paystack Error", {
+            description:
+              error.message || "Could not initialize Paystack payment.",
+          });
+          setPaymentError(
+            error.message || "Could not initialize Paystack payment."
+          );
+          setIsSubmitting(false);
+        },
+      };
+
+      if (typeof Paystack === "undefined") {
+        throw new Error(
+          "Paystack Javascript library not loaded. Make sure to include the script tag in your HTML."
+        );
       }
 
-      toast.success("Order Placed and Paid Successfully!");
-      setQuantities({});
-      setIsReviewingPayment(false);
-      setSavedPaymentMethodId(null);
-      setCustomerId(null);
-      navigate(`/order/success/${orderResult.createOrderFromPayment.data.id}`);
+      const popup = new Paystack();
+      popup.newTransaction(paystackOptions);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "An unknown error occurred during payment.";
-      toast.error("Payment Process Failed", { description: message });
-    } finally {
-      setIsProcessingPayment(false);
+      console.error("Payment Error:", err);
+      let message = "Could not initiate payment.";
+      if (err instanceof Error) {
+        message = err.message;
+      }
+
+      toast.error("Payment Error", { description: message });
+      setPaymentError(message);
+      setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  if (menuLoading) return <div>Loading menu...</div>;
+  if (menuError) {
+    toast.error("Menu Error", { description: menuError.message });
     return (
-      <p className="text-center text-muted-foreground py-4">Loading menu...</p>
+      <div className="text-red-600">
+        Error loading menu: {menuError.message}
+      </div>
     );
   }
-
-  if (error) {
-    return (
-      <p className="text-center text-destructive py-4">
-        Error loading menu: {error.message}
-      </p>
-    );
+  if (!menu) {
+    return <div className="text-red-600">Menu data not available.</div>;
   }
 
-  if (!menuQueryResult) {
-    return (
-      <p className="text-center text-destructive py-4">
-        Menu not found or failed to load.
-      </p>
-    );
-  }
-
-  const menu = menuQueryResult;
-  const hasItemsInCart = Object.values(quantities).some((q) => q > 0);
+  type DisplayItemType = NonNullable<MenuQuery["menu"]>["items"][number] & {
+    available?: boolean;
+  };
 
   return (
-    <>
-      <h2 className="text-2xl font-semibold mb-4 text-center">{menu.name}</h2>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-bold text-center mb-4">{menu.name}</h2>
 
-      <Card>
+      <Card className="bg-white">
         <CardContent className="flex flex-col items-center py-3">
-          {menu.items.length === 0 ? (
+          {!menu.items || menu.items.length === 0 ? (
             <p className="text-muted-foreground">
               No items available for this menu.
             </p>
           ) : (
-            menu.items.map((item) => (
+            menu.items.map((item: DisplayItemType) => (
               <div
                 key={item.id}
-                className="mb-4 border-b pb-4 last:mb-0 last:border-b-0 last:pb-0 w-full"
+                className="flex items-center justify-between mb-4 border-b pb-4 last:mb-0 last:border-b-0 last:pb-0 w-full"
               >
-                <h3 className="font-semibold text-center">
-                  {item.name} - ${item.price.toFixed(2)}
-                </h3>
-                {item.description && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    {item.description}
-                  </p>
-                )}
-                {item.available ? (
-                  <div className="flex items-center justify-center space-x-2 mt-2 mx-auto w-fit">
+                <div>
+                  <h3 className="font-semibold">
+                    {item.name} - R{(item.price ?? 0).toFixed(2)}
+                  </h3>
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground">
+                      {item.description}
+                    </p>
+                  )}
+                </div>
+                {item.available !== false ? (
+                  <div className="flex items-center justify-center space-x-2 mt-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -338,6 +211,7 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuId }) => {
                       onWheel={(e: React.WheelEvent<HTMLInputElement>) =>
                         (e.target as HTMLElement).blur()
                       }
+                      aria-label={`Quantity for ${item.name}`}
                     />
                     <Button
                       variant="outline"
@@ -353,7 +227,7 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuId }) => {
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-sm text-destructive text-center">
+                  <p className="text-sm text-destructive text-center mt-2">
                     Unavailable
                   </p>
                 )}
@@ -363,52 +237,42 @@ export const MenuDisplay: React.FC<MenuDisplayProps> = ({ menuId }) => {
         </CardContent>
       </Card>
 
-      {!isReviewingPayment && hasItemsInCart && (
-        <Button onClick={handleReviewAndPay} className="mt-6 w-full">
-          Review and Pay (${currentTotal.toFixed(2)})
+      <div className="mt-6 p-4 border rounded shadow-sm bg-white">
+        <h3 className="text-lg font-semibold mb-2">Order Summary</h3>
+        {Object.keys(quantities).length === 0 ? (
+          <p className="text-gray-500">No items selected.</p>
+        ) : (
+          <ul className="list-disc pl-5 mb-3">
+            {Object.entries(quantities).map(([itemId, quantity]) => {
+              const item = menu.items.find(
+                (i: DisplayItemType) => i.id === itemId
+              );
+              return (
+                <li key={itemId} className="text-sm">
+                  {item?.name || "Unknown Item"}: {quantity} x R
+                  {(item?.price ?? 0).toFixed(2)}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <p className="text-right font-bold text-xl">
+          Total: R{calculateTotal().toFixed(2)}
+        </p>
+      </div>
+
+      <div className="mt-6">
+        {paymentError && (
+          <p className="text-red-600 mb-3">Error: {paymentError}</p>
+        )}
+        <Button
+          onClick={handlePlaceOrder}
+          disabled={isSubmitting || Object.keys(quantities).length === 0}
+          className="w-full"
+        >
+          {isSubmitting ? "Processing..." : "Proceed to Payment"}
         </Button>
-      )}
-
-      {isReviewingPayment && (
-        <div className="mt-6 border-t pt-6">
-          <h3 className="text-lg font-semibold mb-4 text-center">
-            Review Order & Payment
-          </h3>
-
-          <Receipt totalAmount={currentTotal} processingFee={0} />
-
-          <StripePaymentForm
-            onSetupSuccess={handleCardSetupSuccess}
-            createSetupIntentMutation={createSetupIntentMutation}
-          />
-
-          <Button
-            onClick={handlePayNow}
-            disabled={
-              !savedPaymentMethodId ||
-              isProcessingPayment ||
-              createPaymentIntentMutation.isPending ||
-              createOrderFromPaymentMutation.isPending
-            }
-            className="mt-4 w-full"
-          >
-            {isProcessingPayment
-              ? "Processing Payment..."
-              : `Pay Now ($${currentTotal.toFixed(2)})`}
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={() => {
-              setIsReviewingPayment(false);
-            }}
-            className="mt-2 w-full"
-            disabled={isProcessingPayment}
-          >
-            Back to Menu
-          </Button>
-        </div>
-      )}
-    </>
+      </div>
+    </div>
   );
 };

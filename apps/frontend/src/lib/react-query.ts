@@ -1,26 +1,17 @@
 import { QueryClient } from "@tanstack/react-query";
 import { GraphQLClient } from "graphql-request";
-import { loadStripe } from "@stripe/stripe-js";
+
+// Determine the GraphQL endpoint URL
+// Use environment variable if available, otherwise default to /graphql (for proxy)
+const graphqlEndpoint = import.meta.env.VITE_GRAPHQL_ENDPOINT ?? "/graphql";
+console.log(`Using GraphQL endpoint: ${graphqlEndpoint}`); // Log the endpoint being used
 
 // Create a GraphQL client instance
-// Use the full path from the frontend's perspective; Vite proxy will handle it.
-export const gqlClient = new GraphQLClient("http://localhost:4000/graphql");
+export const gqlClient = new GraphQLClient(graphqlEndpoint);
 
-// Create a react-query client instance
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      // Default query options can go here
-      staleTime: 1000 * 10, // 10 seconds
-      retry: 1,
-    },
-  },
-});
-
-// Replace with your actual Stripe publishable key
-export const stripePromise = loadStripe(
-  "pk_test_51NBYKrIPDPSHqbEpBXuFzsW2jDAxZuUP90wkjK8aZihVJncDuG3SwGbsbo16pQJTiZyMpzM1MbwwhOxrptxnklZm00RD6YmHpL"
-);
+// Create a QueryClient instance
+// Default options can be configured here if needed
+export const queryClient = new QueryClient();
 
 // Helper type forTanStack Query + GraphQL Request integration if needed later
 // export const fetcher = <TData, TVariables>(

@@ -1,11 +1,9 @@
-mutation UpdateOrderStatus($id: String!, $status: String!) {
+# Mutation to update order status
+mutation UpdateOrderStatus($id: ID!, $status: String!) {
+  # Use ID! type for id
   updateOrderStatus(id: $id, status: $status) {
-    statusCode
-    success
-    message
-    data {
-      id
-      status
-    }
+    # Expect Order type directly, no wrapper
+    id
+    status
   }
 }

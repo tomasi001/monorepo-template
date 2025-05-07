@@ -1,0 +1,14 @@
+# Query to fetch an order by its Paystack reference for polling
+query OrderByReference($reference: String!) {
+  orderByReference(reference: $reference) {
+    id
+    status
+    # Add any other fields needed by OrderProcessingPage or confirmation
+    # For example:
+    # total
+    # items {
+    #   quantity
+    #   menuItem { name price }
+    # }
+  }
+}

@@ -1,0 +1,52 @@
+# --- Order Object Types ---
+type Order {
+  id: ID!
+  menuId: ID!
+  menu: Menu! # Reference to Menu type (defined in menu.graphql)
+  items: [OrderItem!]!
+  status: String!
+  total: Float!
+  payment: Payment # Reference to Payment type (defined in payment.graphql)
+  createdAt: String!
+  updatedAt: String!
+}
+
+type OrderItem {
+  id: ID!
+  orderId: ID!
+  order: Order!
+  menuItemId: ID!
+  menuItem: MenuItem! # Reference to MenuItem type (defined in menu.graphql)
+  quantity: Int!
+  price: Float!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# --- Order Input Types ---
+input CreateOrderFromPaymentInput {
+  paystackReference: String!
+  menuId: ID!
+  items: [OrderItemInput!]!
+}
+
+input OrderItemInput {
+  menuId: ID!
+  menuItemId: ID!
+  quantity: Int!
+}
+
+# --- Order Queries ---
+extend type Query {
+  order(id: ID!): Order # Requires authentication
+  orderByReference(reference: String!): Order # New query for polling
+}
+
+# --- Order Mutations ---
+extend type Mutation {
+  # Order Creation (triggered after successful payment verification)
+  createOrderFromPayment(input: CreateOrderFromPaymentInput!): Order!
+
+  # Order Status Update (Example - potentially Restaurant Admin facing)
+  updateOrderStatus(id: ID!, status: String!): Order!
+}

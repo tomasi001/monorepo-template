@@ -1,4 +1,8 @@
-import { GraphQLResolveInfo } from "graphql";
+import {
+  GraphQLResolveInfo,
+  GraphQLScalarType,
+  GraphQLScalarTypeConfig,
+} from "graphql";
 import { ContextValue } from "../index.js";
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
@@ -30,6 +34,24 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
+  JSON: { input: any; output: any };
+};
+
+export type Admin = {
+  __typename?: "Admin";
+  createdAt: Scalars["String"]["output"];
+  email: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  role: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type Commission = {
+  __typename?: "Commission";
+  createdAt: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  percentage: Scalars["Float"]["output"];
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type CreateMenuInput = {
@@ -37,58 +59,52 @@ export type CreateMenuInput = {
   qrCode: Scalars["String"]["input"];
 };
 
+export type CreateMenuItemInput = {
+  available?: InputMaybe<Scalars["Boolean"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  name: Scalars["String"]["input"];
+  price: Scalars["Float"]["input"];
+};
+
 export type CreateOrderFromPaymentInput = {
   items: Array<OrderItemInput>;
   menuId: Scalars["ID"]["input"];
-  paymentIntentId: Scalars["String"]["input"];
+  paystackReference: Scalars["String"]["input"];
 };
 
-export type CreateOrderFromPaymentResponse = {
-  __typename?: "CreateOrderFromPaymentResponse";
-  data?: Maybe<Order>;
-  message?: Maybe<Scalars["String"]["output"]>;
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
+export type DashboardMetrics = {
+  __typename?: "DashboardMetrics";
+  totalCommission: Scalars["Float"]["output"];
+  totalMenus: Scalars["Int"]["output"];
+  totalOrders: Scalars["Int"]["output"];
+  totalPayments: Scalars["Float"]["output"];
+  totalRestaurants: Scalars["Int"]["output"];
 };
 
-export type CreatePaymentIntentData = {
-  __typename?: "CreatePaymentIntentData";
-  clientSecret: Scalars["String"]["output"];
-  paymentIntentId: Scalars["String"]["output"];
-};
-
-export type CreatePaymentIntentInput = {
+export type InitializeTransactionInput = {
   amount: Scalars["Float"]["input"];
   currency: Scalars["String"]["input"];
-  customerId?: InputMaybe<Scalars["String"]["input"]>;
+  email: Scalars["String"]["input"];
+  metadata: Scalars["JSON"]["input"];
+  name: Scalars["String"]["input"];
 };
 
-export type CreatePaymentIntentResponse = {
-  __typename?: "CreatePaymentIntentResponse";
-  data?: Maybe<CreatePaymentIntentData>;
-  message?: Maybe<Scalars["String"]["output"]>;
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
+export type InitializeTransactionResponse = {
+  __typename?: "InitializeTransactionResponse";
+  accessCode: Scalars["String"]["output"];
+  authorizationUrl: Scalars["String"]["output"];
+  reference: Scalars["String"]["output"];
 };
 
-export type CreateSetupIntentData = {
-  __typename?: "CreateSetupIntentData";
-  clientSecret: Scalars["String"]["output"];
-  customerId: Scalars["String"]["output"];
-  setupIntentId: Scalars["String"]["output"];
+export type LoginAdminInput = {
+  email: Scalars["String"]["input"];
+  password: Scalars["String"]["input"];
 };
 
-export type CreateSetupIntentResponse = {
-  __typename?: "CreateSetupIntentResponse";
-  data?: Maybe<CreateSetupIntentData>;
-  message?: Maybe<Scalars["String"]["output"]>;
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
-};
-
-export type HealthCheckStatus = {
-  __typename?: "HealthCheckStatus";
-  status: Scalars["String"]["output"];
+export type LoginAdminResponse = {
+  __typename?: "LoginAdminResponse";
+  admin: Admin;
+  token: Scalars["String"]["output"];
 };
 
 export type Menu = {
@@ -97,6 +113,7 @@ export type Menu = {
   id: Scalars["ID"]["output"];
   items: Array<MenuItem>;
   name: Scalars["String"]["output"];
+  orders: Array<Order>;
   qrCode: Scalars["String"]["output"];
   qrCodeDataUrl: Scalars["String"]["output"];
   updatedAt: Scalars["String"]["output"];
@@ -108,27 +125,32 @@ export type MenuItem = {
   createdAt: Scalars["String"]["output"];
   description?: Maybe<Scalars["String"]["output"]>;
   id: Scalars["ID"]["output"];
+  menuId: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
   price: Scalars["Float"]["output"];
   updatedAt: Scalars["String"]["output"];
 };
 
-export type MenuResponse = {
-  __typename?: "MenuResponse";
-  data?: Maybe<Menu>;
-  message: Scalars["String"]["output"];
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
-};
-
 export type Mutation = {
   __typename?: "Mutation";
-  createMenu: MenuResponse;
-  createOrderFromPayment: CreateOrderFromPaymentResponse;
-  createPaymentIntent: CreatePaymentIntentResponse;
-  createSetupIntent: CreateSetupIntentResponse;
-  updateOrderStatus: OrderResponse;
-  updatePaymentStatus: PaymentResponse;
+  _empty?: Maybe<Scalars["String"]["output"]>;
+  addMenuItem: MenuItem;
+  createMenu: Menu;
+  createOrderFromPayment: Order;
+  deleteMenu: Menu;
+  deleteMenuItem: MenuItem;
+  generateMenuQrCode: QrCodeResponse;
+  initializeTransaction: InitializeTransactionResponse;
+  loginAdmin: LoginAdminResponse;
+  updateCommission: Commission;
+  updateMenu: Menu;
+  updateMenuItem: MenuItem;
+  updateOrderStatus: Order;
+};
+
+export type MutationAddMenuItemArgs = {
+  input: CreateMenuItemInput;
+  menuId: Scalars["ID"]["input"];
 };
 
 export type MutationCreateMenuArgs = {
@@ -139,17 +161,42 @@ export type MutationCreateOrderFromPaymentArgs = {
   input: CreateOrderFromPaymentInput;
 };
 
-export type MutationCreatePaymentIntentArgs = {
-  input: CreatePaymentIntentInput;
+export type MutationDeleteMenuArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteMenuItemArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationGenerateMenuQrCodeArgs = {
+  menuId: Scalars["ID"]["input"];
+};
+
+export type MutationInitializeTransactionArgs = {
+  input: InitializeTransactionInput;
+};
+
+export type MutationLoginAdminArgs = {
+  input: LoginAdminInput;
+};
+
+export type MutationUpdateCommissionArgs = {
+  percentage: Scalars["Float"]["input"];
+};
+
+export type MutationUpdateMenuArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateMenuInput;
+};
+
+export type MutationUpdateMenuItemArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateMenuItemInput;
 };
 
 export type MutationUpdateOrderStatusArgs = {
-  id: Scalars["String"]["input"];
-  status: Scalars["String"]["input"];
-};
-
-export type MutationUpdatePaymentStatusArgs = {
-  id: Scalars["String"]["input"];
+  id: Scalars["ID"]["input"];
   status: Scalars["String"]["input"];
 };
 
@@ -158,6 +205,7 @@ export type Order = {
   createdAt: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
   items: Array<OrderItem>;
+  menu: Menu;
   menuId: Scalars["ID"]["output"];
   payment?: Maybe<Payment>;
   status: Scalars["String"]["output"];
@@ -171,22 +219,17 @@ export type OrderItem = {
   id: Scalars["ID"]["output"];
   menuItem: MenuItem;
   menuItemId: Scalars["ID"]["output"];
+  order: Order;
+  orderId: Scalars["ID"]["output"];
   price: Scalars["Float"]["output"];
   quantity: Scalars["Int"]["output"];
   updatedAt: Scalars["String"]["output"];
 };
 
 export type OrderItemInput = {
+  menuId: Scalars["ID"]["input"];
   menuItemId: Scalars["ID"]["input"];
   quantity: Scalars["Int"]["input"];
-};
-
-export type OrderResponse = {
-  __typename?: "OrderResponse";
-  data?: Maybe<Order>;
-  message: Scalars["String"]["output"];
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
 };
 
 export type Payment = {
@@ -194,51 +237,65 @@ export type Payment = {
   amount: Scalars["Float"]["output"];
   createdAt: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+  order: Order;
   orderId: Scalars["ID"]["output"];
+  paystackReference?: Maybe<Scalars["String"]["output"]>;
   status: Scalars["String"]["output"];
-  stripeId?: Maybe<Scalars["String"]["output"]>;
   updatedAt: Scalars["String"]["output"];
 };
 
-export type PaymentResponse = {
-  __typename?: "PaymentResponse";
-  data?: Maybe<Payment>;
-  message: Scalars["String"]["output"];
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
+export type PaymentWithCommission = {
+  __typename?: "PaymentWithCommission";
+  amount: Scalars["Float"]["output"];
+  commissionAmount: Scalars["Float"]["output"];
+  createdAt: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  netAmount: Scalars["Float"]["output"];
+  orderId: Scalars["ID"]["output"];
+  paystackReference?: Maybe<Scalars["String"]["output"]>;
+  status: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type QrCodeResponse = {
   __typename?: "QrCodeResponse";
-  data?: Maybe<Scalars["String"]["output"]>;
-  message: Scalars["String"]["output"];
-  statusCode: Scalars["Int"]["output"];
-  success: Scalars["Boolean"]["output"];
+  qrCodeDataUrl: Scalars["String"]["output"];
+  qrCodeUrl: Scalars["String"]["output"];
 };
 
 export type Query = {
   __typename?: "Query";
-  generateQrCode: QrCodeResponse;
-  healthCheck: HealthCheckStatus;
-  menu: MenuResponse;
-  menuById: MenuResponse;
-  order: OrderResponse;
-};
-
-export type QueryGenerateQrCodeArgs = {
-  text: Scalars["String"]["input"];
+  commission?: Maybe<Commission>;
+  dashboardMetrics?: Maybe<DashboardMetrics>;
+  healthCheck: Scalars["String"]["output"];
+  menu?: Maybe<Menu>;
+  menus: Array<Menu>;
+  order?: Maybe<Order>;
+  orderByReference?: Maybe<Order>;
+  payments: Array<PaymentWithCommission>;
 };
 
 export type QueryMenuArgs = {
-  qrCode: Scalars["String"]["input"];
-};
-
-export type QueryMenuByIdArgs = {
-  id: Scalars["String"]["input"];
+  id: Scalars["ID"]["input"];
 };
 
 export type QueryOrderArgs = {
-  id: Scalars["String"]["input"];
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryOrderByReferenceArgs = {
+  reference: Scalars["String"]["input"];
+};
+
+export type UpdateMenuInput = {
+  name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UpdateMenuItemInput = {
+  available?: InputMaybe<Scalars["Boolean"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  price?: InputMaybe<Scalars["Float"]["input"]>;
 };
 
 export type WithIndex<TObject> = TObject & Record<string, any>;
@@ -351,149 +408,133 @@ export type DirectiveResolverFn<
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = ResolversObject<{
+  Admin: ResolverTypeWrapper<Admin>;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
+  Commission: ResolverTypeWrapper<Commission>;
   CreateMenuInput: CreateMenuInput;
+  CreateMenuItemInput: CreateMenuItemInput;
   CreateOrderFromPaymentInput: CreateOrderFromPaymentInput;
-  CreateOrderFromPaymentResponse: ResolverTypeWrapper<CreateOrderFromPaymentResponse>;
-  CreatePaymentIntentData: ResolverTypeWrapper<CreatePaymentIntentData>;
-  CreatePaymentIntentInput: CreatePaymentIntentInput;
-  CreatePaymentIntentResponse: ResolverTypeWrapper<CreatePaymentIntentResponse>;
-  CreateSetupIntentData: ResolverTypeWrapper<CreateSetupIntentData>;
-  CreateSetupIntentResponse: ResolverTypeWrapper<CreateSetupIntentResponse>;
+  DashboardMetrics: ResolverTypeWrapper<DashboardMetrics>;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
-  HealthCheckStatus: ResolverTypeWrapper<HealthCheckStatus>;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
+  InitializeTransactionInput: InitializeTransactionInput;
+  InitializeTransactionResponse: ResolverTypeWrapper<InitializeTransactionResponse>;
   Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
+  JSON: ResolverTypeWrapper<Scalars["JSON"]["output"]>;
+  LoginAdminInput: LoginAdminInput;
+  LoginAdminResponse: ResolverTypeWrapper<LoginAdminResponse>;
   Menu: ResolverTypeWrapper<Menu>;
   MenuItem: ResolverTypeWrapper<MenuItem>;
-  MenuResponse: ResolverTypeWrapper<MenuResponse>;
   Mutation: ResolverTypeWrapper<{}>;
   Order: ResolverTypeWrapper<Order>;
   OrderItem: ResolverTypeWrapper<OrderItem>;
   OrderItemInput: OrderItemInput;
-  OrderResponse: ResolverTypeWrapper<OrderResponse>;
   Payment: ResolverTypeWrapper<Payment>;
-  PaymentResponse: ResolverTypeWrapper<PaymentResponse>;
+  PaymentWithCommission: ResolverTypeWrapper<PaymentWithCommission>;
   QrCodeResponse: ResolverTypeWrapper<QrCodeResponse>;
   Query: ResolverTypeWrapper<{}>;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
+  UpdateMenuInput: UpdateMenuInput;
+  UpdateMenuItemInput: UpdateMenuItemInput;
 }>;
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = ResolversObject<{
+  Admin: Admin;
   Boolean: Scalars["Boolean"]["output"];
+  Commission: Commission;
   CreateMenuInput: CreateMenuInput;
+  CreateMenuItemInput: CreateMenuItemInput;
   CreateOrderFromPaymentInput: CreateOrderFromPaymentInput;
-  CreateOrderFromPaymentResponse: CreateOrderFromPaymentResponse;
-  CreatePaymentIntentData: CreatePaymentIntentData;
-  CreatePaymentIntentInput: CreatePaymentIntentInput;
-  CreatePaymentIntentResponse: CreatePaymentIntentResponse;
-  CreateSetupIntentData: CreateSetupIntentData;
-  CreateSetupIntentResponse: CreateSetupIntentResponse;
+  DashboardMetrics: DashboardMetrics;
   Float: Scalars["Float"]["output"];
-  HealthCheckStatus: HealthCheckStatus;
   ID: Scalars["ID"]["output"];
+  InitializeTransactionInput: InitializeTransactionInput;
+  InitializeTransactionResponse: InitializeTransactionResponse;
   Int: Scalars["Int"]["output"];
+  JSON: Scalars["JSON"]["output"];
+  LoginAdminInput: LoginAdminInput;
+  LoginAdminResponse: LoginAdminResponse;
   Menu: Menu;
   MenuItem: MenuItem;
-  MenuResponse: MenuResponse;
   Mutation: {};
   Order: Order;
   OrderItem: OrderItem;
   OrderItemInput: OrderItemInput;
-  OrderResponse: OrderResponse;
   Payment: Payment;
-  PaymentResponse: PaymentResponse;
+  PaymentWithCommission: PaymentWithCommission;
   QrCodeResponse: QrCodeResponse;
   Query: {};
   String: Scalars["String"]["output"];
+  UpdateMenuInput: UpdateMenuInput;
+  UpdateMenuItemInput: UpdateMenuItemInput;
 }>;
 
-export type RestDirectiveArgs = {
-  hidden?: Maybe<Scalars["Boolean"]["input"]>;
-  method: Scalars["String"]["input"];
-  path: Scalars["String"]["input"];
-  tag?: Maybe<Scalars["String"]["input"]>;
-};
-
-export type RestDirectiveResolver<
-  Result,
-  Parent,
-  ContextType = ContextValue,
-  Args = RestDirectiveArgs,
-> = DirectiveResolverFn<Result, Parent, ContextType, Args>;
-
-export type CreateOrderFromPaymentResponseResolvers<
+export type AdminResolvers<
   ContextType = ContextValue,
   ParentType extends
-    ResolversParentTypes["CreateOrderFromPaymentResponse"] = ResolversParentTypes["CreateOrderFromPaymentResponse"],
+    ResolversParentTypes["Admin"] = ResolversParentTypes["Admin"],
 > = ResolversObject<{
-  data?: Resolver<Maybe<ResolversTypes["Order"]>, ParentType, ContextType>;
-  message?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  statusCode?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  email?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  role?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type CreatePaymentIntentDataResolvers<
+export type CommissionResolvers<
   ContextType = ContextValue,
   ParentType extends
-    ResolversParentTypes["CreatePaymentIntentData"] = ResolversParentTypes["CreatePaymentIntentData"],
+    ResolversParentTypes["Commission"] = ResolversParentTypes["Commission"],
 > = ResolversObject<{
-  clientSecret?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  paymentIntentId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  percentage?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type CreatePaymentIntentResponseResolvers<
+export type DashboardMetricsResolvers<
   ContextType = ContextValue,
   ParentType extends
-    ResolversParentTypes["CreatePaymentIntentResponse"] = ResolversParentTypes["CreatePaymentIntentResponse"],
+    ResolversParentTypes["DashboardMetrics"] = ResolversParentTypes["DashboardMetrics"],
 > = ResolversObject<{
-  data?: Resolver<
-    Maybe<ResolversTypes["CreatePaymentIntentData"]>,
+  totalCommission?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  totalMenus?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalOrders?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalPayments?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  totalRestaurants?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type InitializeTransactionResponseResolvers<
+  ContextType = ContextValue,
+  ParentType extends
+    ResolversParentTypes["InitializeTransactionResponse"] = ResolversParentTypes["InitializeTransactionResponse"],
+> = ResolversObject<{
+  accessCode?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  authorizationUrl?: Resolver<
+    ResolversTypes["String"],
     ParentType,
     ContextType
   >;
-  message?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  statusCode?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  reference?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type CreateSetupIntentDataResolvers<
-  ContextType = ContextValue,
-  ParentType extends
-    ResolversParentTypes["CreateSetupIntentData"] = ResolversParentTypes["CreateSetupIntentData"],
-> = ResolversObject<{
-  clientSecret?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  customerId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  setupIntentId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
+export interface JsonScalarConfig
+  extends GraphQLScalarTypeConfig<ResolversTypes["JSON"], any> {
+  name: "JSON";
+}
 
-export type CreateSetupIntentResponseResolvers<
+export type LoginAdminResponseResolvers<
   ContextType = ContextValue,
   ParentType extends
-    ResolversParentTypes["CreateSetupIntentResponse"] = ResolversParentTypes["CreateSetupIntentResponse"],
+    ResolversParentTypes["LoginAdminResponse"] = ResolversParentTypes["LoginAdminResponse"],
 > = ResolversObject<{
-  data?: Resolver<
-    Maybe<ResolversTypes["CreateSetupIntentData"]>,
-    ParentType,
-    ContextType
-  >;
-  message?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  statusCode?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type HealthCheckStatusResolvers<
-  ContextType = ContextValue,
-  ParentType extends
-    ResolversParentTypes["HealthCheckStatus"] = ResolversParentTypes["HealthCheckStatus"],
-> = ResolversObject<{
-  status?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  admin?: Resolver<ResolversTypes["Admin"], ParentType, ContextType>;
+  token?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -506,6 +547,7 @@ export type MenuResolvers<
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   items?: Resolver<Array<ResolversTypes["MenuItem"]>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  orders?: Resolver<Array<ResolversTypes["Order"]>, ParentType, ContextType>;
   qrCode?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   qrCodeDataUrl?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
@@ -525,21 +567,10 @@ export type MenuItemResolvers<
     ContextType
   >;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  menuId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   price?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type MenuResponseResolvers<
-  ContextType = ContextValue,
-  ParentType extends
-    ResolversParentTypes["MenuResponse"] = ResolversParentTypes["MenuResponse"],
-> = ResolversObject<{
-  data?: Resolver<Maybe<ResolversTypes["Menu"]>, ParentType, ContextType>;
-  message?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  statusCode?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -548,40 +579,78 @@ export type MutationResolvers<
   ParentType extends
     ResolversParentTypes["Mutation"] = ResolversParentTypes["Mutation"],
 > = ResolversObject<{
+  _empty?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  addMenuItem?: Resolver<
+    ResolversTypes["MenuItem"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAddMenuItemArgs, "input" | "menuId">
+  >;
   createMenu?: Resolver<
-    ResolversTypes["MenuResponse"],
+    ResolversTypes["Menu"],
     ParentType,
     ContextType,
     RequireFields<MutationCreateMenuArgs, "input">
   >;
   createOrderFromPayment?: Resolver<
-    ResolversTypes["CreateOrderFromPaymentResponse"],
+    ResolversTypes["Order"],
     ParentType,
     ContextType,
     RequireFields<MutationCreateOrderFromPaymentArgs, "input">
   >;
-  createPaymentIntent?: Resolver<
-    ResolversTypes["CreatePaymentIntentResponse"],
+  deleteMenu?: Resolver<
+    ResolversTypes["Menu"],
     ParentType,
     ContextType,
-    RequireFields<MutationCreatePaymentIntentArgs, "input">
+    RequireFields<MutationDeleteMenuArgs, "id">
   >;
-  createSetupIntent?: Resolver<
-    ResolversTypes["CreateSetupIntentResponse"],
+  deleteMenuItem?: Resolver<
+    ResolversTypes["MenuItem"],
     ParentType,
-    ContextType
+    ContextType,
+    RequireFields<MutationDeleteMenuItemArgs, "id">
+  >;
+  generateMenuQrCode?: Resolver<
+    ResolversTypes["QrCodeResponse"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationGenerateMenuQrCodeArgs, "menuId">
+  >;
+  initializeTransaction?: Resolver<
+    ResolversTypes["InitializeTransactionResponse"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationInitializeTransactionArgs, "input">
+  >;
+  loginAdmin?: Resolver<
+    ResolversTypes["LoginAdminResponse"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationLoginAdminArgs, "input">
+  >;
+  updateCommission?: Resolver<
+    ResolversTypes["Commission"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateCommissionArgs, "percentage">
+  >;
+  updateMenu?: Resolver<
+    ResolversTypes["Menu"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateMenuArgs, "id" | "input">
+  >;
+  updateMenuItem?: Resolver<
+    ResolversTypes["MenuItem"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateMenuItemArgs, "id" | "input">
   >;
   updateOrderStatus?: Resolver<
-    ResolversTypes["OrderResponse"],
+    ResolversTypes["Order"],
     ParentType,
     ContextType,
     RequireFields<MutationUpdateOrderStatusArgs, "id" | "status">
-  >;
-  updatePaymentStatus?: Resolver<
-    ResolversTypes["PaymentResponse"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationUpdatePaymentStatusArgs, "id" | "status">
   >;
 }>;
 
@@ -593,6 +662,7 @@ export type OrderResolvers<
   createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   items?: Resolver<Array<ResolversTypes["OrderItem"]>, ParentType, ContextType>;
+  menu?: Resolver<ResolversTypes["Menu"], ParentType, ContextType>;
   menuId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   payment?: Resolver<Maybe<ResolversTypes["Payment"]>, ParentType, ContextType>;
   status?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
@@ -610,21 +680,11 @@ export type OrderItemResolvers<
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   menuItem?: Resolver<ResolversTypes["MenuItem"], ParentType, ContextType>;
   menuItemId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  order?: Resolver<ResolversTypes["Order"], ParentType, ContextType>;
+  orderId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   price?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
   quantity?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-}>;
-
-export type OrderResponseResolvers<
-  ContextType = ContextValue,
-  ParentType extends
-    ResolversParentTypes["OrderResponse"] = ResolversParentTypes["OrderResponse"],
-> = ResolversObject<{
-  data?: Resolver<Maybe<ResolversTypes["Order"]>, ParentType, ContextType>;
-  message?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  statusCode?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -636,22 +696,36 @@ export type PaymentResolvers<
   amount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  order?: Resolver<ResolversTypes["Order"], ParentType, ContextType>;
   orderId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  paystackReference?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
   status?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  stripeId?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
-export type PaymentResponseResolvers<
+export type PaymentWithCommissionResolvers<
   ContextType = ContextValue,
   ParentType extends
-    ResolversParentTypes["PaymentResponse"] = ResolversParentTypes["PaymentResponse"],
+    ResolversParentTypes["PaymentWithCommission"] = ResolversParentTypes["PaymentWithCommission"],
 > = ResolversObject<{
-  data?: Resolver<Maybe<ResolversTypes["Payment"]>, ParentType, ContextType>;
-  message?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  statusCode?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  amount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  commissionAmount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  netAmount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  orderId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  paystackReference?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  status?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -660,10 +734,8 @@ export type QrCodeResponseResolvers<
   ParentType extends
     ResolversParentTypes["QrCodeResponse"] = ResolversParentTypes["QrCodeResponse"],
 > = ResolversObject<{
-  data?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  message?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  statusCode?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  qrCodeDataUrl?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  qrCodeUrl?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -672,57 +744,57 @@ export type QueryResolvers<
   ParentType extends
     ResolversParentTypes["Query"] = ResolversParentTypes["Query"],
 > = ResolversObject<{
-  generateQrCode?: Resolver<
-    ResolversTypes["QrCodeResponse"],
-    ParentType,
-    ContextType,
-    RequireFields<QueryGenerateQrCodeArgs, "text">
-  >;
-  healthCheck?: Resolver<
-    ResolversTypes["HealthCheckStatus"],
+  commission?: Resolver<
+    Maybe<ResolversTypes["Commission"]>,
     ParentType,
     ContextType
   >;
+  dashboardMetrics?: Resolver<
+    Maybe<ResolversTypes["DashboardMetrics"]>,
+    ParentType,
+    ContextType
+  >;
+  healthCheck?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   menu?: Resolver<
-    ResolversTypes["MenuResponse"],
+    Maybe<ResolversTypes["Menu"]>,
     ParentType,
     ContextType,
-    RequireFields<QueryMenuArgs, "qrCode">
+    RequireFields<QueryMenuArgs, "id">
   >;
-  menuById?: Resolver<
-    ResolversTypes["MenuResponse"],
-    ParentType,
-    ContextType,
-    RequireFields<QueryMenuByIdArgs, "id">
-  >;
+  menus?: Resolver<Array<ResolversTypes["Menu"]>, ParentType, ContextType>;
   order?: Resolver<
-    ResolversTypes["OrderResponse"],
+    Maybe<ResolversTypes["Order"]>,
     ParentType,
     ContextType,
     RequireFields<QueryOrderArgs, "id">
   >;
+  orderByReference?: Resolver<
+    Maybe<ResolversTypes["Order"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryOrderByReferenceArgs, "reference">
+  >;
+  payments?: Resolver<
+    Array<ResolversTypes["PaymentWithCommission"]>,
+    ParentType,
+    ContextType
+  >;
 }>;
 
 export type Resolvers<ContextType = ContextValue> = ResolversObject<{
-  CreateOrderFromPaymentResponse?: CreateOrderFromPaymentResponseResolvers<ContextType>;
-  CreatePaymentIntentData?: CreatePaymentIntentDataResolvers<ContextType>;
-  CreatePaymentIntentResponse?: CreatePaymentIntentResponseResolvers<ContextType>;
-  CreateSetupIntentData?: CreateSetupIntentDataResolvers<ContextType>;
-  CreateSetupIntentResponse?: CreateSetupIntentResponseResolvers<ContextType>;
-  HealthCheckStatus?: HealthCheckStatusResolvers<ContextType>;
+  Admin?: AdminResolvers<ContextType>;
+  Commission?: CommissionResolvers<ContextType>;
+  DashboardMetrics?: DashboardMetricsResolvers<ContextType>;
+  InitializeTransactionResponse?: InitializeTransactionResponseResolvers<ContextType>;
+  JSON?: GraphQLScalarType;
+  LoginAdminResponse?: LoginAdminResponseResolvers<ContextType>;
   Menu?: MenuResolvers<ContextType>;
   MenuItem?: MenuItemResolvers<ContextType>;
-  MenuResponse?: MenuResponseResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Order?: OrderResolvers<ContextType>;
   OrderItem?: OrderItemResolvers<ContextType>;
-  OrderResponse?: OrderResponseResolvers<ContextType>;
   Payment?: PaymentResolvers<ContextType>;
-  PaymentResponse?: PaymentResponseResolvers<ContextType>;
+  PaymentWithCommission?: PaymentWithCommissionResolvers<ContextType>;
   QrCodeResponse?: QrCodeResponseResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
-}>;
-
-export type DirectiveResolvers<ContextType = ContextValue> = ResolversObject<{
-  rest?: RestDirectiveResolver<any, any, ContextType>;
 }>;

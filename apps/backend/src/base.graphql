@@ -1,0 +1,12 @@
+# Scalar for JSON objects
+scalar JSON
+
+# Base query - extended by modules
+type Query {
+  healthCheck: String! # Keep the simple health check here
+}
+
+# Base mutation - extended by modules
+type Mutation {
+  _empty: String # Placeholder, can be removed if modules ensure Mutation is extended
+}

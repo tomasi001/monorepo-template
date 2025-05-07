@@ -1,0 +1,142 @@
+# Features Summary
+
+This document summarizes the implemented features across the QR Scanner Menu App based on the requirement documents.
+
+**BACKEND (`apps/backend`)**
+
+- **Database (`packages/database` & Prisma):**
+  - Models: `Menu`, `MenuItem`, `Order`, `OrderItem`, `Payment`, `Admin`, `Commission`, `HealthCheck`.
+  - Migrations created for adding models.
+  - Seeding script populates `Menu`, `MenuItem`, `Admin` (with hashed password), and `Commission` (default 5%).
+  - `qrCodeDataUrl` field added to `Menu` and populated during seeding/creation using the `qrcode` library.
+- **API Framework & Setup:**
+  - Node.js with Express server.
+  - Apollo Server for GraphQL API (`/graphql`).
+  - CORS configured for frontend and super admin origins.
+  - Environment variable handling (`dotenv`).
+  - Prisma Client for database interaction.
+  - Stripe SDK integration (configured via `STRIPE_SECRET_KEY`).
+  - Turborepo setup for building and development.
+- **GraphQL Schema & Resolvers:**
+  - Defined GraphQL schema (`schema.ts`) with Types, Queries, and Mutations.
+  - Modular resolver structure (menu, order, payment, qr-code, admin).
+  - GraphQL Code Generator (`@graphql-codegen/cli`) setup (`codegen.ts`) to generate TypeScript types (`graphql-types.ts`) based on the schema.
+- **Swagger/OpenAPI:**
+  - Automatic OpenAPI specification generation from GraphQL schema using `@thoughtspot/graph-to-openapi`.
+  - Swagger UI served at `/api/docs` using `swagger-ui-express`.
+  - Custom logic added to ensure POST operations have a default request body example in Swagger UI.
+- **Core Functionality (Services & Resolvers):**
+  - **Menu:**
+    - `MenuService`: Create, Get by QR code, Get by ID, Get all.
+    - `menuResolver`: `menu`, `menuById`, `menus`, `createMenu` queries/mutations.
+    - Filters out unavailable `MenuItem`s when fetching.
+  - **QR Code:**
+    - `QrCodeService`: `generateQrCodeDataUrl`, `generateQrCodeBuffer` using `qrcode` library.
+    - `qrCodeResolver`: `generateQrCode` query.
+  - **Payment:**
+    - `PaymentService`: Create Stripe Setup Intent (`createSetupIntent`), Create Stripe Payment Intent (`createPaymentIntent` - now includes commission calculation as application fee), Update payment status.
+    - `paymentResolver`: `createSetupIntent`, `createPaymentIntent`, `updatePaymentStatus` mutations.
+  - **Order:**
+    - `OrderService`: Create order from verified Stripe Payment Intent (`createOrderFromPayment`), Get order by ID, Update order status. Includes logic to verify payment amount against order total. Checks for existing order via `stripeId` for idempotency.
+    - `orderResolver`: `order`, `createOrderFromPayment`, `updateOrderStatus` query/mutations.
+- **Super Admin Functionality (Services & Resolvers):**
+  - **Authentication:**
+    - JWT-based authentication using `jsonwebtoken`.
+    - `authMiddleware` to protect specific GraphQL fields based on `@auth(role: "super_admin")` directive. Verifies Bearer token.
+    - Password hashing using `bcrypt` for `Admin` model.
+  - **Admin:**
+    - `AdminService`:
+      - `login`: Verifies admin credentials (email/password) and returns admin details.
+      - `getDashboardMetrics`: Calculates totals for restaurants (placeholder), menus, orders, payments, and commission revenue.
+      - `getRestaurants`, `createRestaurant`, `updateRestaurant`, `deleteRestaurant`: Placeholders, currently return errors/empty data.
+      - `getCommission`: Retrieves the current commission percentage.
+      - `updateCommission`: Updates the commission percentage (validation 0-1).
+      - `getPayments`: Retrieves all payments and calculates commission/net amounts based on the current percentage.
+    - `adminResolver`:
+      - Queries: `dashboardMetrics`, `restaurants`, `commission`, `payments`.
+      - Mutations: `loginAdmin` (generates JWT), `createRestaurant`, `updateRestaurant`, `deleteRestaurant`, `updateCommission`.
+- **Error Handling:**
+  - Custom error classes (`AuthenticationError`, `BadRequestError`, `NotFoundError`, etc.).
+  - Resolvers return structured responses (`{ statusCode, success, message, data }`).
+- **Testing:**
+  - Detailed `curl` commands provided for testing all major GraphQL endpoints.
+
+**FRONTEND (`apps/frontend`)**
+
+- **Setup & Build:**
+  - Vite project with React and TypeScript.
+  - Configured to run on `http://localhost:3000`.
+  - Dependencies: TanStack Query, `graphql-request`, `wouter`, Stripe JS, `@packages/ui`, `sonner`.
+  - GraphQL Code Generator (`@graphql-codegen/cli` with `client` preset) to generate types and TanStack Query hooks from `.graphql` files and backend schema.
+- **UI Components (`packages/ui` & `apps/frontend/src/components`):**
+  - Shared UI package (`@packages/ui`) using shadcn/ui.
+  - Components: `Button`, `Card`, `Input`, `Dialog`, `Sonner` (for toasts), `Table`, `Toast`, `Toaster`.
+  - `QRScanner`: Custom component using `jsqr` library to access camera and scan QR codes.
+  - `MenuDisplay`: Displays menu items fetched by ID, handles quantity selection, calculates total, initiates payment flow.
+  - `StripePaymentForm`: Integrates Stripe Elements (`CardElement`) for card input, handles card setup confirmation (`confirmCardSetup`) via `createSetupIntent` mutation.
+  - `OrderReceipt`: Displays order confirmation details (Placeholder/Implicitly created for routing).
+  - `App`: Main application component orchestrating routing, QR scanning, and wrapping routes with `QueryClientProvider` and Stripe `Elements`.
+- **Core Logic & Features:**
+  - **QR Scanning:** `QRScanner` component uses `navigator.mediaDevices` to access the camera and `jsqr` to detect QR codes. `App.tsx` handles the scanned URL, parsing it and navigating if it matches the expected format (`/menu/:menuId`).
+  - **Routing:** Uses `wouter` for client-side routing. Handles `/`, `/menu/:menuId`, and `/order/success/:orderId` routes.
+  - **Menu Display & Ordering:** `MenuDisplay` fetches menu data using `useMenuByIdQuery`, allows users to select item quantities, and calculates the total price.
+  - **Payment Flow:**
+    - User reviews order, clicks "Review & Pay".
+    - `StripePaymentForm` is rendered.
+    - User enters card details.
+    - "Confirm Card Details" triggers `createSetupIntent` mutation and `stripe.confirmCardSetup`. On success, `paymentMethodId` and `customerId` are saved in state.
+    - "Pay Now" button becomes active.
+    - Clicking "Pay Now" triggers `createPaymentIntent` mutation (passing amount and customerId).
+    - Uses the returned `clientSecret` and saved `paymentMethodId` to call `stripe.confirmCardPayment`.
+    - If payment succeeds, triggers `createOrderFromPayment` mutation with payment intent ID, menu ID, and items.
+    - On successful order creation, navigates to the order success page (`/order/success/:orderId`).
+  - **State Management:** Uses TanStack Query for server state (fetching menus, orders, etc.) and React `useState` for local UI state (quantities, payment status).
+  - **Notifications:** Uses `sonner` (toast notifications) for user feedback (scan success/error, payment success/failure, etc.).
+- **GraphQL Interaction:**
+  - `graphql-request` client configured (`lib/react-query.ts`) to point to backend (`http://localhost:4000/graphql`).
+  - GraphQL query/mutation definitions in `.graphql` files (`src/graphql/`).
+  - Generated TanStack Query hooks (`useMenuByIdQuery`, `useCreatePaymentIntentMutation`, `useCreateOrderFromPaymentMutation`, etc.) used in components.
+- **Stripe Integration:**
+  - Stripe JS (`@stripe/react-stripe-js`, `@stripe/stripe-js`) configured with publishable key (`VITE_STRIPE_PUBLISHABLE_KEY` via `.env`).
+  - Stripe `Elements` provider wraps payment-related components.
+  - Uses `CardElement`, `useStripe`, `useElements` hooks.
+
+**SUPER ADMIN (`apps/super-admin`)**
+
+- **Setup & Build:**
+  - Separate Vite project with React and TypeScript.
+  - Configured to run on `http://localhost:3001`.
+  - Dependencies: TanStack Query, `wouter`, `sonner`, `@packages/ui`.
+  - Tailwind CSS configured.
+  - GraphQL Code Generator setup similar to frontend, generating types and hooks.
+  - Included in Turborepo configuration and root `package.json` scripts.
+- **UI Components:**
+  - Uses shadcn/ui components installed directly within the app (`button`, `input`, `card`, `table`, `toast`).
+  - `LoginForm`: Handles email/password input and triggers login mutation.
+  - `Dashboard`: Displays key metrics (restaurants, menus, orders, payments, commission) using cards.
+  - `CommissionForm`: Displays current commission percentage and allows updating it via input field.
+  - `PaymentsTable`: Displays a table of all payments, including calculated commission and net amounts.
+  - `Sidebar`: Navigation component for authenticated users (Dashboard, Commission, Payments, Logout).
+  - `ProtectedRoute`: Wrapper component to restrict access to routes based on JWT presence in `localStorage`.
+  - `App`: Main application component setting up routing, managing auth state (`localStorage`), rendering sidebar and main content area.
+- **Core Logic & Features:**
+  - **Authentication:**
+    - Login via `LoginForm` calls `loginAdmin` mutation.
+    - On successful login, JWT token is stored in `localStorage`.
+    - `ProtectedRoute` checks for the token; redirects to `/login` if missing.
+    - GraphQL client (`lib/react-query.ts`) configured to automatically include the `Authorization: Bearer <token>` header if the token exists in `localStorage`.
+    - Logout button removes the token from `localStorage` and redirects to `/login`.
+  - **Dashboard:** Fetches and displays metrics using `useDashboardMetricsQuery`.
+  - **Commission Management:** Fetches current commission using `useCommissionQuery`. Allows updates using `useUpdateCommissionMutation` with input validation (0-100%).
+  - **Payments View:** Fetches all payments (with calculated commission/net amounts) using `usePaymentsQuery` and displays them in `PaymentsTable`.
+  - **Routing:** Uses `wouter` for client-side routing (`/login`, `/`, `/commission`, `/payments`).
+  - **State Management:** TanStack Query for server state, React `useState` for auth token and form inputs.
+  - **Notifications:** Uses `sonner` for login success/failure, commission update success/failure, data loading errors.
+- **GraphQL Interaction:**
+  - GraphQL client configured with JWT header injection.
+  - GraphQL query/mutation definitions in `.graphql` files (`src/graphql/`).
+  - Generated TanStack Query hooks used in components.
+- **Documentation:**
+  - `README.md` created documenting features, setup, and usage for the super admin.
+- **Testing:**
+  - Manual testing steps defined for login, dashboard display, commission updates (including DB verification via Prisma Studio), payments page (empty state and with manually added data), and final end-to-end integration.

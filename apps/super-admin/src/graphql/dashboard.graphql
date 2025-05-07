@@ -1,0 +1,16 @@
+# Query to get dashboard metrics
+query DashboardMetrics {
+  dashboardMetrics {
+    # Remove wrapper fields if query returns DashboardMetrics directly
+    # statusCode
+    # success
+    # message
+    # data {
+    totalRestaurants
+    totalMenus
+    totalOrders
+    totalPayments
+    totalCommission
+    # }
+  }
+}
